@@ -1,0 +1,62 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Gestión de Semilleros</title>
+    <link href="~/Content/login.css" rel="stylesheet" />
+</head>
+<body>
+
+    <div class="login-container">
+
+        <div class="form-section">
+            <div class="form-content">
+                <h2 class="form-title">Iniciar Sesión</h2>
+                <p class="welcome-text">¡Bienvenido! Ingrese sus datos personales para utilizar todas las funciones del sitio de Semilleros.</p>
+
+                @using (Html.BeginForm("Login", "Account", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+
+                    if (ViewBag.Error != null)
+                    {
+                        <div class="alert-error">
+                            @ViewBag.Error
+                        </div>
+                    }
+
+                    <div class="input-group">
+                        <span class="input-icon">✉</span>
+                        <input type="text" id="Username" name="Username" class="form-control-custom" placeholder="Email" required autofocus />
+                    </div>
+
+                    <div class="input-group">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="Password" name="Password" class="form-control-custom" placeholder="Contraseña" required />
+                    </div>
+
+                    <div class="options-row">
+                        <a href="@Url.Action("ForgotPassword", "Account")" class="forgot-link">¿Olvidaste tu contraseña?</a>
+                    </div>
+
+                    <button type="submit" class="btn-primary-custom">INICIAR SESIÓN</button>
+                }
+
+                <div class="register-prompt">
+                    ¿No tienes una cuenta? <a href="@Url.Action("Register", "Account")">Regístrate aquí</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="image-section">
+        </div>
+
+    </div>
+
+</body>
+</html>

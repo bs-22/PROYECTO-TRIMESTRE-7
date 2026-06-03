@@ -1,0 +1,7 @@
+﻿# Archivos de Visual Studio
+.vs/
+bin/
+obj/
+*.user
+*.suo
+packages/
