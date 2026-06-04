@@ -7,7 +7,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #3ba185;
+    background-color: white;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -17,8 +17,8 @@ body {
 /* ── CONTENEDOR PRINCIPAL (MÁS GRANDE) ── */
 .login-container {
     display: flex;
-    width: 1100px; /* Antes 900px */
-    min-height: 650px; /* Antes 500px */
+    width: 1100px;
+    min-height: 650px;
     background-color: #ffffff;
     border-radius: 20px;
     box-shadow: 0 25px 50px rgba(0,0,0,0.25);
@@ -28,7 +28,7 @@ body {
 /* ── MITAD IZQUIERDA: FORMULARIO ── */
 .form-section {
     flex: 1;
-    padding: 60px 80px; /* Más espacio interior */
+    padding: 60px 80px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -37,7 +37,7 @@ body {
 }
 
 .form-title {
-    font-size: 2.6rem; /* Más grande */
+    font-size: 2.6rem;
     font-weight: 800;
     color: #222;
     margin-bottom: 15px;
@@ -55,7 +55,7 @@ body {
 /* Contenedor del formulario interno para alinear bien los inputs */
 .form-inner-wrapper {
     width: 100%;
-    max-width: 360px; /* Entradas de texto más anchas */
+    max-width: 360px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -79,7 +79,7 @@ body {
 
 .form-control-custom {
     width: 100%;
-    padding: 15px 15px 15px 50px; /* Más padding para hacerlas más altas */
+    padding: 15px 15px 15px 50px;
     background-color: #f4f8f7;
     border: 1.5px solid transparent;
     border-radius: 8px;
@@ -95,24 +95,7 @@ body {
         box-shadow: 0 0 0 4px rgba(59, 161, 133, 0.1);
     }
 
-.options-row {
-    width: 100%;
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 30px;
-}
-
-.forgot-link {
-    font-size: 0.9rem;
-    color: #777;
-    text-decoration: none;
-    transition: color 0.3s;
-}
-
-    .forgot-link:hover {
-        color: #3ba185;
-        text-decoration: underline;
-    }
+/* Se eliminaron las clases .options-row, .forgot-link, .register-prompt */
 
 .btn-primary-custom {
     width: 100%;
@@ -127,6 +110,7 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 8px 20px rgba(59, 161, 133, 0.3);
+    margin-top: 15px; /* Se añadió este margen para separar el botón de la contraseña */
 }
 
     .btn-primary-custom:hover {
@@ -134,23 +118,6 @@ body {
         transform: translateY(-2px);
         box-shadow: 0 10px 25px rgba(59, 161, 133, 0.4);
     }
-
-.register-prompt {
-    margin-top: 35px;
-    font-size: 0.95rem;
-    color: #666;
-}
-
-    .register-prompt a {
-        color: #3ba185;
-        font-weight: bold;
-        text-decoration: none;
-    }
-
-        .register-prompt a:hover {
-            text-decoration: underline;
-        }
-
 
 .alert-error {
     background-color: #ffe6e6;
@@ -163,17 +130,13 @@ body {
     text-align: left;
 }
 
-
 .image-section {
     flex: 1;
     position: relative;
     background-image: url('/Content/Images/bg_semillero.jpeg');
     background-size: cover;
-    
     background-repeat: no-repeat;
-    
     border-top-left-radius: 150px;
     border-bottom-left-radius: 150px;
-    
     box-shadow: inset 10px 0 20px rgba(0,0,0,0.05);
 }

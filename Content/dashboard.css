@@ -1,0 +1,273 @@
+﻿/* VARIABLES DE COLOR (Estilo Argon Moderno) */
+:root {
+    --primary-gradient: linear-gradient(87deg, #2dce89 0, #2dcecc 100%);
+    --sidebar-gradient: linear-gradient(180deg, #2dce89 0, #1aa368 100%);
+    --bg-main: #f8f9fe;
+    --bg-card: #ffffff;
+    --text-dark: #32325d;
+    --text-muted: #8898aa;
+    --danger-color: #f5365c;
+    --orange-logout: #fb6340;
+}
+
+/* REGLAS GENERALES */
+body {
+    background-color: var(--bg-main);
+    font-family: 'Open Sans', sans-serif;
+    color: var(--text-dark);
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+/* SIDEBAR (Panel Lateral Izquierdo) */
+.sidebar {
+    background: var(--sidebar-gradient);
+    min-height: 100vh;
+    position: fixed;
+    width: 260px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 0 2rem 0 rgba(136, 152, 170, .15);
+}
+
+.profile-card {
+    padding: 30px 20px;
+    color: white;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.profile-avatar {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.85);
+    padding: 14px 20px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+    .sidebar .nav-link:hover,
+    .sidebar .nav-link.active {
+        color: #ffffff;
+        background-color: rgba(255, 255, 255, 0.15);
+        font-weight: 600;
+    }
+
+.sidebar .logout-container {
+    padding: 20px;
+}
+
+.btn-logout {
+    background-color: var(--orange-logout);
+    color: white;
+    border: 0;
+    width: 100%;
+    padding: 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+    .btn-logout:hover {
+        background-color: #ec4a26;
+        color: white;
+    }
+
+/* CONTENIDO PRINCIPAL */
+.main-content {
+    margin-left: 260px;
+    padding: 35px;
+}
+
+.header-title {
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 5px;
+}
+
+/* TARJETAS DEL DASHBOARD (Cards Blancas) */
+.dashboard-card {
+    background: var(--bg-card);
+    border: 0;
+    border-radius: 0.5rem;
+    box-shadow: 0 0 2rem 0 rgba(136, 152, 170, .15);
+    padding: 24px;
+    margin-bottom: 25px;
+    height: calc(100% - 25px);
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.step-badge {
+    background: var(--primary-gradient);
+    color: white;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 10px;
+    font-size: 0.85rem;
+}
+
+/* COMPONENTES DE FORMULARIO */
+.form-control-custom {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: #495057;
+    background-color: #fff;
+    border: 1px solid #cad1d7;
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px rgba(50,50,93,.15), 0 1px 0 rgba(0,0,0,.02);
+    transition: box-shadow .15s ease;
+    position: relative; /* Clave para el posicionamiento del indicador invisible */
+}
+
+    .form-control-custom:focus {
+        border-color: #2dce89;
+        outline: 0;
+        box-shadow: 0 4px 6px rgba(50,50,93,.11), 0 1px 3px rgba(0,0,0,.08);
+    }
+
+.participant-scrollbox {
+    max-height: 180px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 12px;
+    background: #fbfbfb;
+}
+
+.checkbox-item {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+/* BOTÓN DE ACCIÓN PRINCIPAL */
+.btn-submit-gradient {
+    background: var(--primary-gradient);
+    color: white;
+    border: 0;
+    font-weight: 600;
+    padding: 12px 20px;
+    border-radius: 0.25rem;
+    width: 100%;
+    box-shadow: 0 4px 6px rgba(50,50,93,.11), 0 1px 3px rgba(0,0,0,.08);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+    .btn-submit-gradient:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 7px 14px rgba(50,50,93,.1), 0 3px 6px rgba(0,0,0,.08);
+    }
+
+/* TABLA MODERNA (Vista Administrador) */
+.table-responsive-container {
+    background: var(--bg-card);
+    border-radius: 0.5rem;
+    box-shadow: 0 0 2rem 0 rgba(136, 152, 170, .15);
+    overflow: hidden;
+    margin-top: 25px;
+}
+
+.table-header-banner {
+    background: var(--primary-gradient);
+    color: white;
+    padding: 18px 24px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.custom-table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+}
+
+    .custom-table th {
+        background-color: #f6f9fc;
+        color: #8898aa;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        padding: 16px;
+        border-bottom: 1px solid #e9ecef;
+        text-align: left;
+    }
+
+    .custom-table td {
+        padding: 16px;
+        vertical-align: middle;
+        border-bottom: 1px solid #e9ecef;
+        font-size: 0.88rem;
+        color: #525f7f;
+    }
+
+    .custom-table tr:hover {
+        background-color: #f8f9fe;
+    }
+
+.badge-time {
+    background-color: #e8f9f1;
+    color: #2dce89;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+/* COMPORTAMIENTO CLIQUEABLE TOTAL PARA CAMPOS DE FECHA Y HORA */
+.form-control-custom::-webkit-calendar-picker-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    height: auto;
+    color: transparent;
+    background: transparent;
+    cursor: pointer;
+}

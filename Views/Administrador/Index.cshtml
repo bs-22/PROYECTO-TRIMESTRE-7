@@ -1,0 +1,43 @@
+﻿@{
+    Layout = null; // O usa tu _Layout si lo tienes configurado
+}
+
+<link href="~/Content/dashboard.css" rel="stylesheet" />
+
+<div class="main-content">
+    <div class="container-fluid">
+        <h2 class="mb-4">Panel de Administración</h2>
+
+        <div class="dashboard-card">
+            <h4 class="mb-3"><i class="bi bi-list-ul"></i> Gestión de Reuniones</h4>
+
+            <div class="table-responsive">
+                <table class="table align-items-center">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Lugar</th>
+                            <th>Asunto</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.ID_evento</td>
+                                <td>@item.fecha_evento</td>
+                                <td>@item.lugar</td>
+                                <td>@item.descripcion_evento</td>
+                                <td>
+                                    <button class="btn btn-sm btn-danger">Eliminar</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
