@@ -22,7 +22,7 @@ body {
 
 /* SIDEBAR (Panel Lateral Izquierdo) */
 .sidebar {
-    background: var(--sidebar-gradient);
+    background: #ffffff;
     min-height: 100vh;
     position: fixed;
     width: 260px;
@@ -83,9 +83,13 @@ body {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    text-decoration: none;
+    text-decoration: none !important;
     transition: background 0.2s;
 }
+    /* Y asegúrate de que el span interno tampoco tenga subrayado */
+    .btn-logout span {
+        text-decoration: none !important;
+    }
 
     .btn-logout:hover {
         background-color: #ec4a26;
