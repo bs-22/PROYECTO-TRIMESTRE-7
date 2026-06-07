@@ -1,0 +1,98 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Consultar Eventos";
+    string criterio = ViewBag.CriterioActual ?? "";
+    string valor = ViewBag.ValorActual ?? "";
+}
+
+<div class="container-fluid">
+    <div class="row">
+
+        <div class="col-xl-4 col-lg-5 mb-4">
+            <div class="dashboard-card" style="height: auto;">
+                <div class="card-title text-primary">
+                    <i class="bi bi-search me-2"></i>Búsqueda de Eventos
+                </div>
+
+                @using (Html.BeginForm("ConsultarEventos", "Lider", FormMethod.Get))
+                {
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted">Por favor seleccione alguna de las siguientes opciones</label>
+                        <select name="criterioFiltro" class="form-control-custom" required>
+                            <option value="">Seleccione filtro...</option>
+                            <option value="nombre" @(criterio == "nombre" ? "selected" : "")>Nombre del Evento</option>
+                            <option value="semillero" @(criterio == "semillero" ? "selected" : "")>Nombre del Semillero</option>
+                            <option value="fecha" @(criterio == "fecha" ? "selected" : "")>Fecha Específica</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted">Ahora ingrese la información que quiere buscar relacionado con la opción escogida</label>
+                        <input type="text" name="valorBusqueda" class="form-control-custom" value="@valor" placeholder="Escriba aquí su búsqueda..." required />
+                    </div>
+
+                    <div class="mb-3">
+                        <button type="submit" class="btn-submit-gradient">
+                            <i class="bi bi-filter"></i><span>Buscar con filtro</span>
+                        </button>
+                    </div>
+                }
+
+                <div class="mt-4 p-3 bg-light rounded" style="border: 1px dashed #cad1d7;">
+                    <p class="small text-muted m-0 text-center fw-bold">
+                        <i class="bi bi-info-circle text-warning me-2"></i>Recomendación si es por fecha siga la siguiente estructura año-mes-día (AAAA-MM-DD)
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8 col-lg-7 mb-4">
+            <div class="table-responsive-container" style="margin-top: 0;">
+                <div class="table-header-banner" style="background: linear-gradient(87deg, #11cdef 0, #1171ef 100%);">
+                    <i class="bi bi-calendar-event-fill me-2"></i>Cronograma institucional de Eventos y Ponencias
+                </div>
+
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre Evento</th>
+                            <th>Descripción</th>
+                            <th>Fecha</th>
+                            <th>Semillero Asociado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (ViewBag.EventosResultado != null && ((System.Collections.IEnumerable)ViewBag.EventosResultado).GetEnumerator().MoveNext())
+                        {
+                            foreach (dynamic ev in ViewBag.EventosResultado)
+                            {
+                                <tr>
+                                    <td class="fw-bold">@ev.ID_evento</td>
+                                    <td style="color: #32325d; font-weight: 600;">@ev.nombre_evento</td>
+                                    <td>@ev.descripcion_evento</td>
+                                    <td>
+                                        <span class="badge-time">
+                                            @(ev.fecha_evento != null ? ev.fecha_evento.ToString("dd/MM/yyyy") : "")
+                                        </span>
+                                    </td>
+                                    <td class="fw-bold text-info">@ev.nombre_semillero</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted p-5">
+                                    <i class="bi bi-calendar-x me-2" style="font-size: 1.5rem;"></i><br />
+                                    No se encontraron eventos registrados que coincidan con el criterio.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>

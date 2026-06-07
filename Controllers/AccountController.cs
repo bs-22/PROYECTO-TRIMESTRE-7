@@ -1,7 +1,8 @@
-﻿using System;
+﻿using GestionSemillero1.Models;
+using System;
 using System.Linq;
+using System.Web;
 using System.Web.Mvc;
-using GestionSemillero1.Models;
 
 namespace GestionSemillero1.Controllers
 {
@@ -17,6 +18,9 @@ namespace GestionSemillero1.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Login(string Username, string Password)
         {
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
             try
             {
                 // 1. CORRECCIÓN: Usamos DbSemillero en lugar de SemilleroContext
@@ -63,6 +67,27 @@ namespace GestionSemillero1.Controllers
                 ViewBag.Error = "Error en el sistema: " + ex.Message;
                 return View();
             }
+        }
+
+        // GET: Account/Logout
+        public ActionResult Logout()
+        {
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+            // 1. Limpiamos todas las variables de sesión del servidor
+            Session.Clear();
+            Session.Abandon();
+
+            // 2. Eliminamos la cookie de autenticación (si aplica)
+            if (Request.Cookies[".ASPXAUTH"] != null)
+            {
+                HttpCookie cookie = new HttpCookie(".ASPXAUTH");
+                cookie.Expires = DateTime.Now.AddDays(-1);
+                Response.Cookies.Add(cookie);
+            }
+
+            // 3. Redirige de inmediato a la vista de Login en el AccountController
+            return RedirectToAction("Login", "Account");
         }
     }
 }

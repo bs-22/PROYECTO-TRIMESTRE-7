@@ -1,0 +1,317 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Registrar Proyecto";
+    string pestañaActiva = ViewBag.PestañaCargada;
+}
+
+<div class="container-fluid">
+
+    @if (TempData["ErrorProyecto"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert" style="border-radius: 8px;">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorProyecto"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- MENÚ SUPERIOR DE PESTAÑAS (TABS ARGON) -->
+    <ul class="nav-tabs-custom">
+        <li>
+            <button class="nav-link-tab @(pestañaActiva == "proyectos" || string.IsNullOrEmpty(pestañaActiva) ? "active" : "")" onclick="navegarPestañaLocal('proyectos')">
+                <i class="bi bi-folder-fill me-2"></i>1. Registrar Proyecto
+            </button>
+        </li>
+        <li>
+            <button class="nav-link-tab @(pestañaActiva == "fases" ? "active" : "")" onclick="navegarPestañaLocal('fases')">
+                <i class="bi bi-layers-half me-2"></i>2. Fases del Proyecto
+            </button>
+        </li>
+        <li>
+            <button class="nav-link-tab @(pestañaActiva == "actividades" ? "active" : "")" onclick="navegarPestañaLocal('actividades')">
+                <i class="bi bi-check2-square me-2"></i>3. Actividades Operativas
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+
+        <!-- ================= PESTAÑA A: PROYECTOS ================= -->
+        <div class="tab-pane fade @(pestañaActiva == "proyectos" || string.IsNullOrEmpty(pestañaActiva) ? "show active" : "")">
+            @using (Html.BeginForm("RegistrarProyecto", "Lider", FormMethod.Post))
+            {
+                <input type="hidden" name="tipoSubmit" value="proyecto" />
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="dashboard-card" style="height:auto;">
+                            <div class="card-title"><span class="step-badge">1</span>Identificación del Proyecto</div>
+                            <div class="mb-3">
+                                <input type="text" id="p_ID" name="ID_proyecto" class="form-control-custom" value="@ViewBag.NextProyectoID" readonly style="background-color:#f6f9fc;" required />
+                            </div>
+                            <div class="mb-3">
+                                <input type="text" id="p_Nombre" name="nombre_proyecto" class="form-control-custom" placeholder="Nombre descriptivo del proyecto" required />
+                            </div>
+                            <div class="mb-1">
+                                <input type="text" id="p_Actividad" name="actividad_proyecto" class="form-control-custom" placeholder="Actividad principal o enfoque" required />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="dashboard-card" style="height:auto;">
+                            <div class="card-title"><span class="step-badge">2</span>Asignación y Cronograma</div>
+                            <div class="mb-3">
+                                <select id="p_Semillero" name="ID_semillero" class="form-control-custom" required>
+                                    <option value="">Asociar a un semillero...</option>
+                                    @if (ViewBag.SemillerosDisponibles != null)
+                                    {
+                                        foreach (var sem in ViewBag.SemillerosDisponibles)
+                                        {
+                                            <option value="@sem.ID_semillero">@sem.nombre_semillero</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="mb-3" style="position:relative;">
+                                <input type="date" id="p_FInicio" name="fecha_inicio_proyecto" class="form-control-custom" required />
+                            </div>
+                            <div class="mb-1" style="position:relative;">
+                                <input type="date" id="p_FFin" name="fecha_fin_proyecto" class="form-control-custom" required />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mb-4">
+                    <button type="submit" name="accionCrud" value="agregar" class="btn-submit-gradient" style="width:auto; padding:10px 25px;"><i class="bi bi-plus-circle me-2"></i>Agregar Proyecto</button>
+                    <button type="submit" name="accionCrud" value="actualizar" class="btn-logout" style="background-color:#ffad1f; width:auto; padding:10px 25px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
+                    <button type="submit" name="accionCrud" value="eliminar" class="btn-logout" style="background-color:var(--danger-color); width:auto; padding:10px 25px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
+                </div>
+            }
+            <div class="table-responsive-container">
+                <div class="table-header-banner"><i class="bi bi-folder text-white me-2"></i>Proyectos de Investigación Activos</div>
+                <table class="custom-table" id="tablaProyectosRaw">
+                    <thead><tr><th>ID</th><th>Nombre Proyecto</th><th>Línea Enfoque</th><th>Inicio</th><th>Fin</th><th style="display:none;">SemId</th></tr></thead>
+                    <tbody>
+                        @if (ViewBag.ListaProyectos != null)
+                        {
+                            foreach (var proj in ViewBag.ListaProyectos)
+                            {
+                                <tr>
+                                    <td class="fw-bold id-p-cell">@proj.ID_proyecto</td>
+                                    <td style="color:#32325d; font-weight:600;">@proj.nombre_proyecto</td>
+                                    <td>@proj.actividad_proyecto</td>
+                                    <td>@proj.fecha_inicio_proyecto.ToString("yyyy-MM-dd")</td>
+                                    <td>@proj.fecha_fin_proyecto.ToString("yyyy-MM-dd")</td>
+                                    <td style="display:none;" class="sem-p-oculto">@proj.ID_semillero</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= PESTAÑA B: FASES ================= -->
+        <div class="tab-pane fade @(pestañaActiva == "fases" ? "show active" : "")">
+            @using (Html.BeginForm("RegistrarProyecto", "Lider", FormMethod.Post))
+            {
+                <input type="hidden" name="tipoSubmit" value="fase" />
+                <div class="dashboard-card mb-4" style="height:auto;">
+                    <div class="card-title"><span class="step-badge">1</span>Estructuración de Etapas (Fases)</div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <input type="text" id="f_ID" name="ID_fase_proyecto" class="form-control-custom" value="@ViewBag.NextFaseID" readonly style="background-color:#f6f9fc;" required />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <select id="f_Proyecto" name="ID_proyecto" class="form-control-custom" required>
+                                <option value="">Asociar a Proyecto Padre...</option>
+                                @if (ViewBag.ProyectosDisponibles != null)
+                                {
+                                    foreach (var proj in ViewBag.ProyectosDisponibles)
+                                    {
+                                        <option value="@proj.ID_proyecto">@proj.nombre_proyecto</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <input type="text" id="f_Nombre" name="nombre_fase_proyecto" class="form-control-custom" placeholder="Nombre de la fase" required />
+                        </div>
+                    </div>
+                    <div class="mb-1">
+                        <textarea id="f_Descripcion" name="descripcion_fase_proyecto" class="form-control-custom" rows="2" placeholder="Describa el objetivo principal de esta fase académica..." required></textarea>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mb-4">
+                    <button type="submit" name="accionCrud" value="agregar" class="btn-submit-gradient" style="width:auto; padding:10px 25px;"><i class="bi bi-plus-circle me-2"></i>Agregar Fase</button>
+                    <button type="submit" name="accionCrud" value="actualizar" class="btn-logout" style="background-color:#ffad1f; width:auto; padding:10px 25px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
+                    <button type="submit" name="accionCrud" value="eliminar" class="btn-logout" style="background-color:var(--danger-color); width:auto; padding:10px 25px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
+                </div>
+            }
+            <div class="table-responsive-container">
+                <div class="table-header-banner" style="background: linear-gradient(87deg, #11cdef 0, #1171ef 100%);"><i class="bi bi-layers-half text-white me-2"></i>Fases Registradas por Proyecto</div>
+                <table class="custom-table" id="tablaFasesRaw">
+                    <thead><tr><th>ID Fase</th><th>Nombre Fase</th><th>Descripción</th><th>Proyecto Padre</th></tr></thead>
+                    <tbody>
+                        @if (ViewBag.ListaFases != null)
+                        {
+                            // CAMBIO CLAVE: Usamos dynamic para mapear el ExpandoObject del Controlador
+                            foreach (dynamic fase in ViewBag.ListaFases)
+                            {
+                                <tr>
+                                    <td class="fw-bold id-f-cell">@fase.ID_fase_proyecto</td>
+                                    <td style="color:#32325d; font-weight:600;">@fase.nombre_fase_proyecto</td>
+                                    <td>@fase.descripcion_fase_proyecto</td>
+                                    <td>@fase.nombre_proyecto</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= PESTAÑA C: ACTIVIDADES ================= -->
+        <div class="tab-pane fade @(pestañaActiva == "actividades" ? "show active" : "")">
+            @using (Html.BeginForm("RegistrarProyecto", "Lider", FormMethod.Post))
+            {
+                <input type="hidden" name="tipoSubmit" value="actividad" />
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="dashboard-card" style="height:auto;">
+                            <div class="card-title"><span class="step-badge">1</span>Definición de Tareas</div>
+                            <div class="mb-3">
+                                <input type="text" id="a_ID" name="ID_activida_proyecto" class="form-control-custom" value="@ViewBag.NextActividadID" readonly style="background-color:#f6f9fc;" required />
+                            </div>
+                            <div class="mb-3">
+                                <select id="a_Fase" name="ID_fase_proyecto" class="form-control-custom" required>
+                                    <option value="">Seleccione Fase Vinculada...</option>
+                                    @if (ViewBag.FasesDisponibles != null)
+                                    {
+                                        foreach (var fase in ViewBag.FasesDisponibles)
+                                        {
+                                            <option value="@fase.ID_fase_proyecto">@fase.nombre_fase_proyecto</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <input type="text" id="a_Nombre" name="nombre_actividad_proyecto" class="form-control-custom" placeholder="Nombre específico de la actividad" required />
+                            </div>
+                            <div class="mb-1">
+                                <textarea id="a_Descripcion" name="descripcion_actividad_proyecto" class="form-control-custom" rows="2" placeholder="Detalle técnico de la actividad..." required></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="dashboard-card" style="height:auto;">
+                            <div class="card-title"><span class="step-badge">2</span>Vigencia Operativa</div>
+                            <div class="mb-3" style="position:relative;">
+                                <label class="form-label small fw-bold text-muted">Fecha de Apertura</label>
+                                <input type="date" id="a_FInicio" name="fecha_inicio_actividad_proyecto" class="form-control-custom" required />
+                            </div>
+                            <div class="mb-1" style="position:relative;">
+                                <label class="form-label small fw-bold text-muted">Fecha de Cierre Programado</label>
+                                <input type="date" id="a_FFin" name="fecha_fin_actividad_proyecto" class="form-control-custom" required />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mb-4">
+                    <button type="submit" name="accionCrud" value="agregar" class="btn-submit-gradient" style="width:auto; padding:10px 25px;"><i class="bi bi-plus-circle me-2"></i>Agregar Actividad</button>
+                    <button type="submit" name="accionCrud" value="actualizar" class="btn-logout" style="background-color:#ffad1f; width:auto; padding:10px 25px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
+                    <button type="submit" name="accionCrud" value="eliminar" class="btn-logout" style="background-color:var(--danger-color); width:auto; padding:10px 25px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
+                </div>
+            }
+            <div class="table-responsive-container">
+                <div class="table-header-banner" style="background: linear-gradient(87deg, #5e72e4 0, #825ee4 100%);"><i class="bi bi-check2-square text-white me-2"></i>Cronograma de Actividades Generales</div>
+                <table class="custom-table" id="tablaActividadesRaw">
+                    <thead><tr><th>ID Act.</th><th>Nombre Actividad</th><th>Detalle</th><th>Inicio</th><th>Fin</th><th>Fase Vinculada</th></tr></thead>
+                    <tbody>
+                        @if (ViewBag.ListaActividades != null)
+                        {
+                            // CAMBIO CLAVE: Usamos dynamic para mapear el ExpandoObject del Controlador
+                            foreach (dynamic act in ViewBag.ListaActividades)
+                            {
+                                <tr>
+                                    <td class="fw-bold id-a-cell">@act.ID_activida_proyecto</td>
+                                    <td style="color:#32325d; font-weight:600;">@act.nombre_actividad_proyecto</td>
+                                    <td>@act.descripcion_actividad_proyecto</td>
+                                    <td><span class="badge-time">@act.fecha_inicio_actividad_proyecto.ToString("dd/MM/yyyy")</span></td>
+                                    <td><span class="badge-time" style="background-color:#fff3cd; color:#856404;">@act.fecha_fin_actividad_proyecto.ToString("dd/MM/yyyy")</span></td>
+                                    <td>@act.nombre_fase_proyecto</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function navegarPestañaLocal(pestaña) {
+        window.location.href = `@Url.Action("RegistrarProyecto", "Lider")?pestañaActiva=` + pestaña;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const tProyectos = document.getElementById("tablaProyectosRaw");
+        if(tProyectos) {
+            tProyectos.querySelectorAll("tbody tr").forEach(row => {
+                row.addEventListener("click", function() {
+                    document.getElementById("p_ID").value = this.cells[0].innerText.trim();
+                    document.getElementById("p_Nombre").value = this.cells[1].innerText.trim();
+                    document.getElementById("p_Actividad").value = this.cells[2].innerText.trim();
+                    document.getElementById("p_FInicio").value = this.cells[3].innerText.trim();
+                    document.getElementById("p_FFin").value = this.cells[4].innerText.trim();
+                    document.getElementById("p_Semillero").value = this.querySelector(".sem-p-oculto").innerText.trim();
+                });
+            });
+        }
+
+        const tFases = document.getElementById("tablaFasesRaw");
+        if(tFases) {
+            tFases.querySelectorAll("tbody tr").forEach(row => {
+                row.addEventListener("click", function() {
+                    document.getElementById("f_ID").value = this.cells[0].innerText.trim();
+                    document.getElementById("f_Nombre").value = this.cells[1].innerText.trim();
+                    document.getElementById("f_Descripcion").value = this.cells[2].innerText.trim();
+
+                    const projTxt = this.cells[3].innerText.trim();
+                    const combo = document.getElementById("f_Proyecto");
+                    for (let i = 0; i < combo.options.length; i++) {
+                        if (combo.options[i].text.trim() === projTxt) {
+                            combo.selectedIndex = i; break;
+                        }
+                    }
+                });
+            });
+        }
+
+        const tActividades = document.getElementById("tablaActividadesRaw");
+        if(tActividades) {
+            tActividades.querySelectorAll("tbody tr").forEach(row => {
+                row.addEventListener("click", function() {
+                    document.getElementById("a_ID").value = this.cells[0].innerText.trim();
+                    document.getElementById("a_Nombre").value = this.cells[1].innerText.trim();
+                    document.getElementById("a_Descripcion").value = this.cells[2].innerText.trim();
+
+                    const pFecha = (str) => {
+                        const parts = str.split('/');
+                        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    }
+                    document.getElementById("a_FInicio").value = pFecha(this.cells[3].innerText.trim());
+                    document.getElementById("a_FFin").value = pFecha(this.cells[4].innerText.trim());
+
+                    const faseTxt = this.cells[5].innerText.trim();
+                    const combo = document.getElementById("a_Fase");
+                    for (let i = 0; i < combo.options.length; i++) {
+                        if (combo.options[i].text.trim() === faseTxt) {
+                            combo.selectedIndex = i; break;
+                        }
+                    }
+                });
+            });
+        }
+    });
+</script>

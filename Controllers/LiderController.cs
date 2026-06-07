@@ -1,26 +1,470 @@
-﻿using System;
+﻿using GestionSemillero1.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using System.Dynamic;
 
 namespace GestionSemillero1.Controllers
 {
     public class LiderController : Controller
     {
+        private DbSemillero db = new DbSemillero();
+
         // GET: Lider/Index
         public ActionResult Index()
         {
-            // Validación de seguridad: Solo entran líderes logueados
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
             if (Session["UsuarioLogueado"] == null || Session["TipoUsuario"]?.ToString().ToLower() != "lider")
             {
                 return RedirectToAction("Login", "Account");
             }
 
-            // Enviamos el correo a la vista
             ViewBag.Usuario = Session["UsuarioLogueado"].ToString();
+            return View();
+        }
+
+        // GET: Lider/GestionarSemillero
+        public ActionResult GestionarSemillero(string semilleroFiltro, string lineaFiltro, string fechaFiltro, string seccionCargada, decimal? idSemilleroSeccion4)
+        {
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
+            if (Session["UsuarioLogueado"] == null || Session["TipoUsuario"]?.ToString().ToLower() != "lider")
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            decimal siguienteId = 2001;
+            var ultimoSemillero = db.semillero.OrderByDescending(s => s.ID_semillero).FirstOrDefault();
+            if (ultimoSemillero != null)
+            {
+                siguienteId = ultimoSemillero.ID_semillero + 1;
+            }
+            ViewBag.SiguienteID = siguienteId;
+
+            var todosLosSemilleros = db.semillero.ToList() ?? new List<semillero>();
+            ViewBag.SemillerosFiltro = todosLosSemilleros;
+            ViewBag.LineasFiltro = todosLosSemilleros.Select(s => s.linea_investigacion).Distinct().ToList();
+
+            ViewBag.SeccionActual = string.IsNullOrEmpty(seccionCargada) ? "semilleros" : seccionCargada;
+
+            if (idSemilleroSeccion4.HasValue)
+            {
+                ViewBag.SeccionActual = "investigadores";
+                ViewBag.IdSemilleroSeleccionado4 = idSemilleroSeccion4.Value;
+
+                var semActual = db.semillero.Find(idSemilleroSeccion4.Value);
+                ViewBag.NombreSemilleroSeleccionado4 = semActual != null ? semActual.nombre_semillero : "";
+
+                List<InvestigadorFiltroViewModel> listaDeMiembros = (from i in db.investigadores
+                                                                     join u in db.Usuarios on i.ID_usuario equals u.ID_usuario
+                                                                     where i.ID_semillero == idSemilleroSeccion4.Value
+                                                                     select new InvestigadorFiltroViewModel
+                                                                     {
+                                                                         ID_investigador = i.ID_investigador,
+                                                                         NombreCompleto = i.nombre_investigador + " " + i.apellido_investigador,
+                                                                         correo_usuario = u.correo_usuario,
+                                                                         estado_usuario = u.estado_usuario,
+                                                                         ID_usuario = i.ID_usuario
+                                                                     }).ToList();
+
+                ViewBag.InvestigadoresDeEsteSemillero = listaDeMiembros;
+            }
+
+            if (ViewBag.SeccionActual == "filtros")
+            {
+                var query = db.semillero.AsQueryable();
+
+                if (!string.IsNullOrEmpty(semilleroFiltro))
+                {
+                    decimal idSem = Convert.ToDecimal(semilleroFiltro);
+                    query = query.Where(s => s.ID_semillero == idSem);
+                }
+                if (!string.IsNullOrEmpty(lineaFiltro))
+                {
+                    query = query.Where(s => s.linea_investigacion == lineaFiltro);
+                }
+                if (!string.IsNullOrEmpty(fechaFiltro))
+                {
+                    DateTime fecha = Convert.ToDateTime(fechaFiltro);
+                    query = query.Where(s => s.fecha_creacion_semillero == fecha);
+                }
+
+                ViewBag.ResultadoFiltros = query.ToList();
+            }
+
+            return View(todosLosSemilleros);
+        }
+
+        // POST: Lider/GestionarSemillero
+        [HttpPost]
+        public ActionResult GestionarSemillero(semillero datosSemillero, string accion)
+        {
+            if (Session["UsuarioLogueado"] == null) return RedirectToAction("Login", "Account");
+
+            try
+            {
+                if (accion == "agregar")
+                {
+                    datosSemillero.estado = "activo";
+                    db.semillero.Add(datosSemillero);
+                    db.SaveChanges();
+                }
+                else if (accion == "actualizar")
+                {
+                    var registro = db.semillero.Find(datosSemillero.ID_semillero);
+                    if (registro != null)
+                    {
+                        registro.nombre_semillero = datosSemillero.nombre_semillero;
+                        registro.linea_investigacion = datosSemillero.linea_investigacion;
+                        registro.fecha_creacion_semillero = datosSemillero.fecha_creacion_semillero;
+                        registro.descripcion_semillero = datosSemillero.descripcion_semillero;
+                        db.SaveChanges();
+                    }
+                }
+                else if (accion == "eliminar")
+                {
+                    var registro = db.semillero.Find(datosSemillero.ID_semillero);
+                    if (registro != null)
+                    {
+                        db.semillero.Remove(registro);
+                        db.SaveChanges();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error: " + ex.Message;
+            }
+
+            return RedirectToAction("GestionarSemillero", new { seccionCargada = "semilleros" });
+        }
+
+        // POST: Lider/ProcesarAccionesInvestigadores
+        [HttpPost]
+        public ActionResult ProcesarAccionesInvestigadores(decimal? idSemilleroSeleccionado, string idUsuarioSeleccionado, string accionInvestigador, string nuevoInvestigadorNombre, string nuevoInvestigadorApellido, string nuevoInvestigadorDoc, int? nuevoInvestigadorEdad, decimal? nuevoInvestigadorTel, string nuevoInvestigadorCorreo, string nuevoInvestigadorContrasena)
+        {
+            if (Session["UsuarioLogueado"] == null) return RedirectToAction("Login", "Account");
+
+            if (accionInvestigador == "agregar")
+            {
+                using (var transaccion = db.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        var correoLimpio = nuevoInvestigadorCorreo.Trim().ToLower();
+
+                        bool existeUsuario = db.Usuarios.Any(u => u.correo_usuario.Trim().ToLower() == correoLimpio);
+                        if (existeUsuario)
+                        {
+                            throw new Exception("El correo ingresado ya se encuentra registrado en el sistema.");
+                        }
+
+                        Usuario nuevoUsuario = new Usuario();
+                        decimal nextUserId = 1;
+                        var ultimoUser = db.Usuarios.OrderByDescending(u => u.ID_usuario).FirstOrDefault();
+                        if (ultimoUser != null) nextUserId = ultimoUser.ID_usuario + 1;
+
+                        nuevoUsuario.ID_usuario = nextUserId;
+                        nuevoUsuario.correo_usuario = nuevoInvestigadorCorreo.Trim();
+                        nuevoUsuario.contraseña_usuario = nuevoInvestigadorContrasena;
+                        nuevoUsuario.tipo_usuario = "investigador";
+                        nuevoUsuario.estado_usuario = "activo";
+
+                        db.Usuarios.Add(nuevoUsuario);
+                        db.SaveChanges();
+
+                        investigadores nuevoInv = new investigadores();
+                        decimal nextInvId = 1;
+                        var ultimoInv = db.investigadores.OrderByDescending(i => i.ID_investigador).FirstOrDefault();
+                        if (ultimoInv != null) nextInvId = ultimoInv.ID_investigador + 1;
+
+                        nuevoInv.ID_investigador = nextInvId;
+                        nuevoInv.nombre_investigador = nuevoInvestigadorNombre;
+                        nuevoInv.apellido_investigador = nuevoInvestigadorApellido;
+                        nuevoInv.tipo_documento = nuevoInvestigadorDoc;
+                        nuevoInv.edad_investigador = nuevoInvestigadorEdad ?? 20;
+                        nuevoInv.telefono_investigador = nuevoInvestigadorTel ?? 0;
+                        nuevoInv.ID_usuario = nuevoUsuario.ID_usuario;
+                        nuevoInv.ID_semillero = idSemilleroSeleccionado.Value;
+
+                        db.investigadores.Add(nuevoInv);
+                        db.SaveChanges();
+
+                        transaccion.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        transaccion.Rollback();
+                        TempData["Error"] = ex.Message;
+                    }
+                }
+            }
+            else
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(idUsuarioSeleccionado))
+                    {
+                        decimal idUser = Convert.ToDecimal(idUsuarioSeleccionado);
+                        var usuario = db.Usuarios.Find(idUser);
+
+                        if (usuario != null)
+                        {
+                            if (accionInvestigador == "habilitar")
+                            {
+                                usuario.estado_usuario = "activo";
+                                db.SaveChanges();
+                            }
+                            else if (accionInvestigador == "deshabilitar")
+                            {
+                                usuario.estado_usuario = "inactivo";
+                                db.SaveChanges();
+                            }
+                            else if (accionInvestigador == "eliminar" && idSemilleroSeleccionado.HasValue)
+                            {
+                                var relacion = db.investigadores.FirstOrDefault(i => i.ID_usuario == idUser && i.ID_semillero == idSemilleroSeleccionado.Value);
+                                if (relacion != null)
+                                {
+                                    db.investigadores.Remove(relacion);
+                                    db.SaveChanges();
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TempData["Error"] = ex.Message;
+                }
+            }
+
+            return RedirectToAction("GestionarSemillero", new { seccionCargada = "investigadores", idSemilleroSeccion4 = idSemilleroSeleccionado });
+        }
+
+        // =========================================================================
+        // MÉTODOS AUXILIARES: REGISTRAR PROYECTO
+        // =========================================================================
+        private void CargarDatosVista(string pestañaActiva)
+        {
+            ViewBag.PestañaCargada = string.IsNullOrEmpty(pestañaActiva) ? "proyectos" : pestañaActiva;
+
+            try
+            {
+                ViewBag.SemillerosDisponibles = db.semillero.ToList() ?? new List<semillero>();
+                ViewBag.ProyectosDisponibles = db.Proyectos.ToList() ?? new List<Proyecto>();
+                ViewBag.FasesDisponibles = db.FasesProyecto.ToList() ?? new List<FaseProyecto>();
+                ViewBag.ListaProyectos = db.Proyectos.ToList() ?? new List<Proyecto>();
+
+                decimal nextProyectoId = 101;
+                var ultProyecto = db.Proyectos.OrderByDescending(p => p.ID_proyecto).FirstOrDefault();
+                if (ultProyecto != null) nextProyectoId = ultProyecto.ID_proyecto + 1;
+                ViewBag.NextProyectoID = nextProyectoId;
+
+                decimal nextFaseId = 501;
+                var ultFase = db.FasesProyecto.OrderByDescending(f => f.ID_fase_proyecto).FirstOrDefault();
+                if (ultFase != null) nextFaseId = ultFase.ID_fase_proyecto + 1;
+                ViewBag.NextFaseID = nextFaseId;
+
+                decimal nextActividadId = 901;
+                var ultAct = db.ActividadesProyecto.OrderByDescending(a => a.ID_activida_proyecto).FirstOrDefault();
+                if (ultAct != null) nextActividadId = ultAct.ID_activida_proyecto + 1;
+                ViewBag.NextActividadID = nextActividadId;
+
+                var queryFases = (from f in db.FasesProyecto
+                                  join p in db.Proyectos on f.ID_proyecto equals p.ID_proyecto into joined
+                                  from p in joined.DefaultIfEmpty()
+                                  select new { f.ID_fase_proyecto, f.nombre_fase_proyecto, f.descripcion_fase_proyecto, NombreProyecto = p != null ? p.nombre_proyecto : "Sin proyecto" }).ToList();
+
+                ViewBag.ListaFases = queryFases.Select(x =>
+                {
+                    dynamic expando = new ExpandoObject();
+                    expando.ID_fase_proyecto = x.ID_fase_proyecto;
+                    expando.nombre_fase_proyecto = x.nombre_fase_proyecto;
+                    expando.descripcion_fase_proyecto = x.descripcion_fase_proyecto;
+                    expando.nombre_proyecto = x.NombreProyecto;
+                    return expando;
+                }).ToList();
+
+                var queryActividades = (from a in db.ActividadesProyecto
+                                        join f in db.FasesProyecto on a.ID_fase_proyecto equals f.ID_fase_proyecto into joined
+                                        from f in joined.DefaultIfEmpty()
+                                        select new { a.ID_activida_proyecto, a.nombre_actividad_proyecto, a.descripcion_actividad_proyecto, a.fecha_inicio_actividad_proyecto, a.fecha_fin_actividad_proyecto, NombreFase = f != null ? f.nombre_fase_proyecto : "Sin fase" }).ToList();
+
+                ViewBag.ListaActividades = queryActividades.Select(x =>
+                {
+                    dynamic expando = new ExpandoObject();
+                    expando.ID_activida_proyecto = x.ID_activida_proyecto;
+                    expando.nombre_actividad_proyecto = x.nombre_actividad_proyecto;
+                    expando.descripcion_actividad_proyecto = x.descripcion_actividad_proyecto;
+                    expando.fecha_inicio_actividad_proyecto = x.fecha_inicio_actividad_proyecto;
+                    expando.fecha_fin_actividad_proyecto = x.fecha_fin_actividad_proyecto;
+                    expando.nombre_fase_proyecto = x.NombreFase;
+                    return expando;
+                }).ToList();
+            }
+            catch (Exception)
+            {
+                if (ViewBag.SemillerosDisponibles == null) ViewBag.SemillerosDisponibles = new List<semillero>();
+                if (ViewBag.ProyectosDisponibles == null) ViewBag.ProyectosDisponibles = new List<Proyecto>();
+                if (ViewBag.FasesDisponibles == null) ViewBag.FasesDisponibles = new List<FaseProyecto>();
+                if (ViewBag.ListaProyectos == null) ViewBag.ListaProyectos = new List<Proyecto>();
+                if (ViewBag.ListaFases == null) ViewBag.ListaFases = new List<object>();
+                if (ViewBag.ListaActividades == null) ViewBag.ListaActividades = new List<object>();
+            }
+        }
+
+        // GET: Lider/RegistrarProyecto
+        public ActionResult RegistrarProyecto(string pestañaActiva)
+        {
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
+            if (Session["UsuarioLogueado"] == null || Session["TipoUsuario"]?.ToString().ToLower() != "lider")
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            CargarDatosVista(pestañaActiva);
+            return View();
+        }
+
+        // POST: Lider/RegistrarProyecto
+        [HttpPost]
+        public ActionResult RegistrarProyecto(Proyecto p, FaseProyecto f, ActividadProyecto a, string tipoSubmit, string accionCrud)
+        {
+            if (Session["UsuarioLogueado"] == null) return RedirectToAction("Login", "Account");
+
+            string pestañaDestino = string.IsNullOrEmpty(tipoSubmit) ? "proyectos" : tipoSubmit;
+
+            try
+            {
+                if (pestañaDestino == "proyecto")
+                {
+                    pestañaDestino = "proyectos";
+                    if (accionCrud == "agregar") { db.Proyectos.Add(p); }
+                    else if (accionCrud == "actualizar")
+                    {
+                        var r = db.Proyectos.Find(p.ID_proyecto);
+                        if (r != null) { r.nombre_proyecto = p.nombre_proyecto; r.actividad_proyecto = p.actividad_proyecto; r.fecha_inicio_proyecto = p.fecha_inicio_proyecto; r.fecha_fin_proyecto = p.fecha_fin_proyecto; r.ID_semillero = p.ID_semillero; }
+                    }
+                    else if (accionCrud == "eliminar")
+                    {
+                        var r = db.Proyectos.Find(p.ID_proyecto);
+                        if (r != null) db.Proyectos.Remove(r);
+                    }
+                    db.SaveChanges();
+                }
+                else if (pestañaDestino == "fase")
+                {
+                    pestañaDestino = "fases";
+                    if (accionCrud == "agregar") { db.FasesProyecto.Add(f); }
+                    else if (accionCrud == "actualizar")
+                    {
+                        var r = db.FasesProyecto.Find(f.ID_fase_proyecto);
+                        if (r != null) { r.nombre_fase_proyecto = f.nombre_fase_proyecto; r.descripcion_fase_proyecto = f.descripcion_fase_proyecto; r.ID_proyecto = f.ID_proyecto; }
+                    }
+                    else if (accionCrud == "eliminar")
+                    {
+                        var r = db.FasesProyecto.Find(f.ID_fase_proyecto);
+                        if (r != null) db.FasesProyecto.Remove(r);
+                    }
+                    db.SaveChanges();
+                }
+                else if (pestañaDestino == "actividad")
+                {
+                    pestañaDestino = "actividades";
+                    if (accionCrud == "agregar") { db.ActividadesProyecto.Add(a); }
+                    else if (accionCrud == "actualizar")
+                    {
+                        var r = db.ActividadesProyecto.Find(a.ID_activida_proyecto);
+                        if (r != null) { r.nombre_actividad_proyecto = a.nombre_actividad_proyecto; r.descripcion_actividad_proyecto = a.descripcion_actividad_proyecto; r.fecha_inicio_actividad_proyecto = a.fecha_inicio_actividad_proyecto; r.fecha_fin_actividad_proyecto = a.fecha_fin_actividad_proyecto; r.ID_fase_proyecto = a.ID_fase_proyecto; }
+                    }
+                    else if (accionCrud == "eliminar")
+                    {
+                        var r = db.ActividadesProyecto.Find(a.ID_activida_proyecto);
+                        if (r != null) db.ActividadesProyecto.Remove(r);
+                    }
+                    db.SaveChanges();
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorProyecto"] = "Error en base de datos: " + ex.Message;
+            }
+
+            CargarDatosVista(pestañaDestino);
+            return View();
+        }
+
+        // =========================================================================
+        // MÉTODOS DEL MÓDULO: CONSULTAR EVENTOS
+        // =========================================================================
+        // GET: Lider/ConsultarEventos
+        public ActionResult ConsultarEventos(string criterioFiltro, string valorBusqueda)
+        {
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
+            if (Session["UsuarioLogueado"] == null || Session["TipoUsuario"]?.ToString().ToLower() != "lider")
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Consulta corregida uniendo Eventos con Semilleros de forma segura
+            var query = from e in db.Eventos
+                        join s in db.semillero on e.ID_semillero equals s.ID_semillero
+                        select new
+                        {
+                            e.ID_evento,
+                            e.nombre_evento,
+                            e.descripcion_evento,
+                            e.fecha_evento,
+                            s.nombre_semillero
+                        };
+
+            // Filtrado condicional según la selección en el combo
+            if (!string.IsNullOrEmpty(criterioFiltro) && !string.IsNullOrEmpty(valorBusqueda))
+            {
+                string busqueda = valorBusqueda.Trim().ToLower();
+
+                if (criterioFiltro == "nombre")
+                {
+                    query = query.Where(e => e.nombre_evento.ToLower().Contains(busqueda));
+                }
+                else if (criterioFiltro == "semillero")
+                {
+                    query = query.Where(s => s.nombre_semillero.ToLower().Contains(busqueda));
+                }
+                else if (criterioFiltro == "fecha")
+                {
+                    if (DateTime.TryParse(valorBusqueda, out DateTime fechaFiltro))
+                    {
+                        query = query.Where(e => e.fecha_evento == fechaFiltro);
+                    }
+                }
+            }
+
+            // Aplanamiento dinámico definitivo para evitar errores de Binder en la vista Razor
+            ViewBag.EventosResultado = query.ToList().Select(x => {
+                dynamic expando = new ExpandoObject();
+                expando.ID_evento = x.ID_evento;
+                expando.nombre_evento = x.nombre_evento;
+                expando.descripcion_evento = x.descripcion_evento;
+                expando.fecha_evento = x.fecha_evento;
+                expando.nombre_semillero = x.nombre_semillero;
+                return expando;
+            }).ToList();
+
+            ViewBag.CriterioActual = criterioFiltro;
+            ViewBag.ValorActual = valorBusqueda;
 
             return View();
         }
     }
+    
 }
