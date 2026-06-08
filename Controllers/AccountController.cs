@@ -23,7 +23,6 @@ namespace GestionSemillero1.Controllers
 
             try
             {
-                // 1. CORRECCIÓN: Usamos DbSemillero en lugar de SemilleroContext
                 using (var db = new DbSemillero())
                 {
                     var usuario = db.Usuarios.FirstOrDefault(u =>
@@ -38,16 +37,19 @@ namespace GestionSemillero1.Controllers
 
                         string rol = usuario.tipo_usuario?.ToLower().Trim();
 
-                        // 2. CORRECCIÓN: Adaptamos los roles a tu base de datos real
+                        // EVALUACIÓN DE ROLES DESDE LA BASE DE DATOS
                         if (rol == "lider")
                         {
-                            // Si entra Jeremias o Leizmy, van al panel de Lider
                             return RedirectToAction("Index", "Lider");
                         }
                         else if (rol == "administrador")
                         {
-                            // Si entra Bryam, va al panel de Administrador
                             return RedirectToAction("Index", "Administrador");
+                        }
+                        // AGREGADO: Redirección correcta para el Investigador
+                        else if (rol == "investigador")
+                        {
+                            return RedirectToAction("Index", "Investigador");
                         }
                         else
                         {
@@ -74,11 +76,10 @@ namespace GestionSemillero1.Controllers
         {
             Response.Cache.SetCacheability(HttpCacheability.NoCache);
             Response.Cache.SetNoStore();
-            // 1. Limpiamos todas las variables de sesión del servidor
+
             Session.Clear();
             Session.Abandon();
 
-            // 2. Eliminamos la cookie de autenticación (si aplica)
             if (Request.Cookies[".ASPXAUTH"] != null)
             {
                 HttpCookie cookie = new HttpCookie(".ASPXAUTH");
@@ -86,7 +87,6 @@ namespace GestionSemillero1.Controllers
                 Response.Cookies.Add(cookie);
             }
 
-            // 3. Redirige de inmediato a la vista de Login en el AccountController
             return RedirectToAction("Login", "Account");
         }
     }

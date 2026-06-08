@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.Entity;
-using System.Linq;
-using System.Web;
+﻿using System.Data.Entity;
+using System.Drawing;
 
 namespace GestionSemillero1.Models
 {
@@ -12,10 +9,11 @@ namespace GestionSemillero1.Models
         {
         }
 
+        // Definición correcta de la tabla Reunion
+        public DbSet<Reunion> Reunion { get; set; }
+
         public DbSet<Usuario> Usuarios { get; set; }
-
         public DbSet<semillero> semillero { get; set; }
-
         public DbSet<investigadores> investigadores { get; set; }
         public DbSet<Proyecto> Proyectos { get; set; }
         public DbSet<FaseProyecto> FasesProyecto { get; set; }

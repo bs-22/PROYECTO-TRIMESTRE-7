@@ -126,6 +126,7 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\AdministradorController.cs" />
+    <Compile Include="Controllers\InvestigadorController.cs" />
     <Compile Include="Controllers\LiderController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -137,6 +138,7 @@
     <Compile Include="Models\Investigadores.cs" />
     <Compile Include="Models\InvestigadorFiltroViewModel.cs" />
     <Compile Include="Models\Proyecto.cs" />
+    <Compile Include="Models\Reunion.cs" />
     <Compile Include="Models\Semillero.cs" />
     <Compile Include="Models\Usuario.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -199,7 +201,7 @@
     <Content Include="Views\Account\Login.cshtml" />
     <Content Include="Views\Administrador\Index.cshtml" />
     <Content Include="Views\Lider\Index.cshtml" />
-    <Content Include="Views\Investigador\View.cshtml" />
+    <Content Include="Views\Investigador\Index.cshtml" />
     <Content Include="Views\Lider\GestionarSemillero.cshtml" />
     <Content Include="Views\Lider\RegistrarProyecto.cshtml" />
     <Content Include="Views\Lider\ConsultarEventos.cshtml" />
