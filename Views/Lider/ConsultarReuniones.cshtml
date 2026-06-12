@@ -1,0 +1,65 @@
+﻿@model IEnumerable<GestionSemillero1.Models.Reunion>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container-fluid p-4">
+    <h3 class="mb-4">Consultar Reuniones</h3>
+
+    <form method="get" class="row g-3 mb-4 align-items-end">
+        <div class="col-md-3">
+            <select name="criterio" class="form-select">
+                <option value="ID">Filtrar por ID</option>
+                <option value="Fecha">Fecha (dd-mm-aaaa)</option>
+            </select>
+        </div>
+        <div class="col-md-5">
+            <input type="text" name="valor" class="form-control" placeholder="Valor a buscar..." value="@ViewBag.Valor" required />
+            @if (ViewBag.Error != null)
+            {<small class="text-danger">@ViewBag.Error</small>}
+        </div>
+        <div class="col-md-2"><button type="submit" class="btn btn-success w-100">Buscar</button></div>
+        <div class="col-md-2"><a href="@Url.Action("ConsultarReuniones", "Lider")" class="btn btn-secondary w-100">Limpiar</a></div>
+    </form>
+
+    <table class="table table-hover">
+        <thead class="table-success">
+            <tr>
+                <th>ID</th>
+                <th>Asunto / Descripción</th>
+                <th>Fecha</th>
+                <th>Lugar / Enlace</th>
+                <th>Hora Inicio</th>
+                <th>Hora Fin</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td><strong>@item.ID_reunion</strong></td>
+                        <td>@item.descripcion_reunion</td>
+                        <td>@item.fecha_reunion.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            <span class="badge bg-light text-dark border" style="padding: 5px 8px;">
+                                📍 @item.lugar_reunion
+                            </span>
+                        </td>
+                        <td>@item.hora_reunion</td>
+                        <td>@item.hora_fin_reunion</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="6" class="text-center text-muted" style="padding: 25px; font-style: italic; background-color: #f9f9f9;">
+                        <i class="bi bi-calendar-x" style="margin-right: 8px; font-size: 1.2rem; vertical-align: middle;"></i>
+                        No tienes reuniones personalizadas creadas o asignadas en este momento.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

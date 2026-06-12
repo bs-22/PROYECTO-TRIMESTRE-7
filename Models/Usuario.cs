@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GestionSemillero1.Models
@@ -31,5 +32,7 @@ namespace GestionSemillero1.Models
         [StringLength(20)]
         [Column("tipo_usuario")]
         public string tipo_usuario { get; set; }
+
+
     }
 }

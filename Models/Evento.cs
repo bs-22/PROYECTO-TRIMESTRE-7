@@ -25,8 +25,8 @@ namespace GestionSemillero1.Models
 
         [Required]
         [StringLength(100)]
-        [Column("descripcion_evento")] // Mapeo explícito a la columna de la base de datos
-        public string descripcion_evento { get; set; }
+        [Column("descripción_evento")] // Mapeo explícito a la columna de la base de datos
+        public string descripción_evento { get; set; }
 
         [Required]
         [Column("ID_semillero")]

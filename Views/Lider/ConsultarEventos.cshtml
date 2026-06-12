@@ -31,11 +31,17 @@
                         <input type="text" name="valorBusqueda" class="form-control-custom" value="@valor" placeholder="Escriba aquí su búsqueda..." required />
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-3 d-flex flex-column gap-2">
                         <button type="submit" class="btn-submit-gradient">
                             <i class="bi bi-filter"></i><span>Buscar con filtro</span>
                         </button>
+
+                        <a href="@Url.Action("ConsultarEventos", "Lider")" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px;">
+                            <i class="bi bi-x-circle"></i> Limpiar filtros
+                        </a>
                     </div>
+
+                   
                 }
 
                 <div class="mt-4 p-3 bg-light rounded" style="border: 1px dashed #cad1d7;">
@@ -70,7 +76,7 @@
                                 <tr>
                                     <td class="fw-bold">@ev.ID_evento</td>
                                     <td style="color: #32325d; font-weight: 600;">@ev.nombre_evento</td>
-                                    <td>@ev.descripcion_evento</td>
+                                    <td>@ev.descripción_evento</td>
                                     <td>
                                         <span class="badge-time">
                                             @(ev.fecha_evento != null ? ev.fecha_evento.ToString("dd/MM/yyyy") : "")

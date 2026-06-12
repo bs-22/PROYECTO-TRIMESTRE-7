@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - Dashboard Investigador</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="~/Content/dashboard.css" rel="stylesheet" />
+    <style>
+        .sidebar {
+            background-color: #ffffff !important;
+            color: #333333 !important;
+            border-right: 1px solid #eaeaea;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+        }
+
+            .sidebar .profile-card h6, .sidebar .profile-card small, .sidebar .profile-avatar i {
+                color: #333333 !important;
+            }
+
+            .sidebar .nav-link, .btn-logout {
+                color: #333333 !important;
+                text-decoration: none !important;
+                padding: 12px 15px;
+                font-weight: 500;
+            }
+
+                .sidebar .nav-link span, .btn-logout span {
+                    text-decoration: underline;
+                    text-decoration-color: #a8e6cf !important;
+                    text-decoration-thickness: 3px;
+                    text-underline-offset: 4px;
+                    transition: text-decoration-color 0.3s ease;
+                }
+
+                .sidebar .nav-link:hover span, .btn-logout:hover span {
+                    text-decoration-color: #74c69d !important;
+                }
+
+            .sidebar i {
+                margin-right: 8px;
+                color: #555;
+            }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div>
+            <div class="profile-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="profile-avatar"><i class="bi bi-person-badge fs-3"></i></div>
+                    <div>
+                        <h6 class="mb-0 fw-bold">@Session["UsuarioLogueado"]</h6>
+                        <small class="opacity-75">Rol Investigador</small>
+                    </div>
+                </div>
+            </div>
+            <nav class="d-flex flex-column mt-4">
+                <a class="nav-link active" href="@Url.Action("Index", "Investigador")">
+                    <i class="bi bi-camera-video"></i> <span>Consultar Reuniones</span>
+                </a>
+            </nav>
+        </div>
+        <div class="logout-container">
+            <a class="btn-logout" href="@Url.Action("Logout", "Account")">
+                <i class="bi bi-box-arrow-left"></i> <span>Cerrar sesión</span>
+            </a>
+        </div>
+    </div>
+    <div class="main-content">
+        @RenderBody()
+    </div>
+</body>
+</html>

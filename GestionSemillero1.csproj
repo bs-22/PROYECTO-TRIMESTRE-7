@@ -132,6 +132,7 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\ActividadProyecto.cs" />
+    <Compile Include="Models\AsistenciaReunion.cs" />
     <Compile Include="Models\DbSemillero.cs" />
     <Compile Include="Models\Evento.cs" />
     <Compile Include="Models\FaseProyecto.cs" />
@@ -141,6 +142,7 @@
     <Compile Include="Models\Reunion.cs" />
     <Compile Include="Models\Semillero.cs" />
     <Compile Include="Models\Usuario.cs" />
+    <Compile Include="Models\UsuarioGestionViewModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -163,6 +165,7 @@
     <Content Include="Content\bootstrap.rtl.min.css" />
     <Content Include="Content\dashboard.css" />
     <Content Include="Content\Images\bg_semillero.jpeg" />
+    <Content Include="Content\investigador.css" />
     <Content Include="Content\login.css" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
@@ -201,10 +204,18 @@
     <Content Include="Views\Account\Login.cshtml" />
     <Content Include="Views\Administrador\Index.cshtml" />
     <Content Include="Views\Lider\Index.cshtml" />
-    <Content Include="Views\Investigador\Index.cshtml" />
     <Content Include="Views\Lider\GestionarSemillero.cshtml" />
     <Content Include="Views\Lider\RegistrarProyecto.cshtml" />
     <Content Include="Views\Lider\ConsultarEventos.cshtml" />
+    <Content Include="Views\Shared\_LayoutInvestigador.cshtml" />
+    <Content Include="Views\Investigador\Index.cshtml" />
+    <Content Include="Views\Lider\ConsultarReuniones.cshtml" />
+    <Content Include="Views\Administrador\Usuarios.cshtml" />
+    <Content Include="Views\Shared\_LayoutAdministrador.cshtml" />
+    <Content Include="Views\Administrador\Reuniones.cshtml" />
+    <Content Include="Views\Lider\AsignarReunion.cshtml" />
+    <Content Include="Views\Administrador\RegistrarProyecto.cshtml" />
+    <Content Include="Views\Administrador\RegistrarEvento.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

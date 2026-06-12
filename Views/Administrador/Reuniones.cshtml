@@ -1,0 +1,356 @@
+﻿@model IEnumerable<GestionSemillero1.Models.Reunion>
+@{
+    ViewBag.Title = "Gestión de Reuniones";
+    Layout = "~/Views/Shared/_LayoutAdministrador.cshtml";
+    var comboSemilleros = ViewBag.ListaSemilleros as List<GestionSemillero1.Models.semillero>;
+    var listaUsuarios = ViewBag.ListaUsuarios as List<GestionSemillero1.Models.Usuario>;
+}
+
+<style>
+    /* Estilos globales coherentes con el ecosistema del Admin Panel */
+    .filter-card, .dashboard-card {
+        background: #ffffff;
+        border: none;
+        border-radius: 12px;
+    }
+
+    .table th {
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
+    .table td {
+        font-size: 0.85rem;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+    .sticky-table-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #f8fafc !important;
+    }
+
+    .participantes-box {
+        max-height: 140px;
+        overflow-y: auto;
+        border-radius: 8px;
+        background-color: #f8fafc;
+    }
+</style>
+
+<div class="container-fluid px-2" style="font-size: 0.9rem;">
+
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div class="card filter-card shadow-sm p-4 bg-white h-100">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="p-2 bg-success-subtle text-success rounded-3 me-2">
+                        <i class="bi bi-funnel-fill fs-5"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark m-0" style="font-size: 1.1rem;">Filtros de Agenda</h5>
+                </div>
+
+                <p class="text-muted small mb-4">Filtre los compromisos según el semillero investigador o el estado actual de la reunión.</p>
+
+                @using (Html.BeginForm("Reuniones", "Administrador", FormMethod.Get))
+                {
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Semillero Organizador</label>
+                        <select name="filtroSemillero" class="form-select form-select-sm">
+                            <option value="">-- Todos los semilleros --</option>
+                            @if (comboSemilleros != null)
+                            {
+                                foreach (var s in comboSemilleros)
+                                {
+                                    <option value="@s.ID_semillero" @(ViewBag.SemilleroSel?.ToString() == s.ID_semillero.ToString() ? "selected" : "")>@s.nombre_semillero</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-secondary">Estado de Reunión</label>
+                        <select name="filtroEstado" class="form-select form-select-sm">
+                            <option value="">-- Todos los estados --</option>
+                            <option value="Iniciada" @(ViewBag.EstadoSel == "Iniciada" ? "selected" : "")>Iniciada</option>
+                            <option value="En curso" @(ViewBag.EstadoSel == "En curso" ? "selected" : "")>En curso</option>
+                            <option value="Finalizada" @(ViewBag.EstadoSel == "Finalizada" ? "selected" : "")>Finalizada</option>
+                        </select>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-sm btn-success fw-bold py-2 shadow-sm"><i class="bi bi-search me-1"></i> Filtrar Agenda</button>
+                        <a href="@Url.Action("Reuniones", "Administrador")" class="btn btn-sm btn-outline-secondary py-2 text-decoration-none text-center">
+                            <i class="bi bi-arrow-counterclockwise"></i> Limpiar Filtros
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="card dashboard-card shadow-sm p-4 bg-white mb-4">
+                <div class="box-title d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold text-dark fs-6"><i class="bi bi-calendar-week text-primary me-2"></i>AGENDA DE COMPROMISOS Y REUNIONES</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-bold px-3 py-1.5 rounded-pill">@Model.Count() Eventos Programados</span>
+                </div>
+
+                <div class="table-responsive rounded border custom-scrollbar" style="max-height: 290px; overflow-y: auto;">
+                    <table class="table table-hover align-middle mb-0 text-nowrap">
+                        <thead class="table-light sticky-top sticky-table-header">
+                            <tr>
+                                <th>ID</th>
+                                <th>FECHA</th>
+                                <th class="text-center">ESTADO</th>
+                                <th>LUGAR / COMPONENTE</th>
+                                <th>HORA INICIO</th>
+                                <th>HORA FIN</th>
+                                <th>ID SEMILLERO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model != null)
+                            {
+                                foreach (var r in Model)
+                                {
+                                    <tr class="fila-reunion" style="cursor:pointer"
+                                        data-idreunion="@r.ID_reunion"
+                                        data-fecha="@r.fecha_reunion.ToString("yyyy-MM-dd")"
+                                        data-lugar="@r.lugar_reunion"
+                                        data-hora="@r.hora_reunion"
+                                        data-horafin="@r.hora_fin_reunion"
+                                        data-idsemillero="@r.ID_semillero"
+                                        data-desc="@r.descripcion_reunion">
+                                        <td class="fw-bold text-primary font-monospace">#@r.ID_reunion</td>
+                                        <td class="fw-bold text-dark"><i class="bi bi-calendar-event me-1 text-muted"></i>@r.fecha_reunion.ToString("dd/MM/yyyy")</td>
+                                        <td class="text-center">
+                                            @if (r.estado_reunion == "Finalizada")
+                                            {
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fw-bold">Finalizada</span>
+                                            }
+                                            else if (r.estado_reunion == "En curso")
+                                            {
+                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2.5 py-1 rounded-pill fw-bold">En curso</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-info-subtle text-info border border-info-subtle px-2.5 py-1 rounded-pill fw-bold">Iniciada</span>
+                                            }
+                                        </td>
+                                        <td class="text-secondary fw-semibold">@r.lugar_reunion</td>
+                                        <td><span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-clock text-muted me-1"></i>@r.hora_reunion</span></td>
+                                        <td><span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-clock-fill text-muted me-1"></i>@r.hora_fin_reunion</span></td>
+                                        <td class="text-center text-muted font-monospace">@r.ID_semillero</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card dashboard-card shadow-sm p-4 bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                    <div class="box-title fw-bold text-dark fs-6" id="txtTituloFormulario">
+                        <i class="bi bi-pencil-square text-success me-2"></i>Detalles y Registro de Comité
+                    </div>
+                    <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none d-none" id="btnResetForm" onclick="resetearFormularioReunion()">
+                        <i class="bi bi-arrow-left-short"></i> Agendar Nueva Reunión
+                    </button>
+                </div>
+
+                @using (Html.BeginForm("GuardarReunion", "Administrador", FormMethod.Post, new { id = "formGestion" }))
+                {
+                    <input type="hidden" id="hdnIDReunion" name="ID_reunion" value="0" />
+
+                    <div class="row g-3" style="font-size: 0.85rem;">
+                        <div class="col-md-1">
+                            <label class="form-label fw-bold text-secondary mb-1">ID</label>
+                            <input type="text" class="form-control form-control-sm bg-light text-muted fw-bold text-center" id="txtIDVisual" readonly placeholder="-" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-secondary mb-1">Semillero Convocado</label>
+                            <select class="form-select form-select-sm" id="ddlSemillero" name="ID_semillero" required>
+                                <option value="">-- Seleccione Semillero --</option>
+                                @if (comboSemilleros != null)
+                                {
+                                    foreach (var s in comboSemilleros)
+                                    {
+                                        <option value="@s.ID_semillero">@s.nombre_semillero</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-secondary mb-1">Lugar / Plataforma</label>
+                            <input type="text" class="form-control form-control-sm" id="txtLugar" name="lugar_reunion" required placeholder="Ej: Sala de juntas o Teams" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold text-secondary mb-1">Fecha Programada</label>
+                            <input type="date" class="form-control form-control-sm" id="txtFecha" name="fecha_reunion" required min="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-1.5 col-sm-6">
+                            <label class="form-label fw-bold text-secondary mb-1">Hora Inicio</label>
+                            <input type="text" class="form-control form-control-sm" id="txtHora" name="hora_reunion" required placeholder="08:00 AM" />
+                        </div>
+                        <div class="col-md-1.5 col-sm-6">
+                            <label class="form-label fw-bold text-secondary mb-1">Hora Fin</label>
+                            <input type="text" class="form-control form-control-sm" id="txtHoraFin" name="hora_fin_reunion" required placeholder="10:00 AM" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary mb-1">Objetivos y Compromisos a Tratar</label>
+                            <textarea class="form-control form-control-sm" id="txtDescripcion" name="descripcion_reunion" rows="5" required placeholder="Escriba el orden del día de la reunión..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary mb-1">Convocatoria de Participantes (Asistencia)</label>
+                            <div class="border rounded p-3 bg-light custom-scrollbar participantes-box h-100" style="max-height: 114px;">
+                                <div class="row g-2">
+                                    @if (listaUsuarios != null)
+                                    {
+                                        foreach (var u in listaUsuarios)
+                                        {
+                                            <div class="col-6">
+                                                <div class="form-check m-0">
+                                                    <input class="form-check-input chk-usuario" type="checkbox" name="usuariosAsignados" value="@u.ID_usuario" id="chk_@u.ID_usuario">
+                                                    <label class="form-check-label text-truncate small" style="max-width: 90%; cursor: pointer;" for="chk_@u.ID_usuario">
+                                                        @u.correo_usuario.Trim()
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 border-top pt-3">
+                        <button type="button" class="btn btn-outline-danger btn-sm fw-bold px-4" id="btnEliminar"><i class="bi bi-trash3-fill me-1"></i> Cancelar Reunión</button>
+                        <button type="submit" class="btn btn-warning text-dark btn-sm fw-bold px-4 d-none" id="btnActualizar">Aplicar Cambios</button>
+                        <button type="submit" class="btn btn-success btn-sm fw-bold px-4 shadow-sm" id="btnAgregar"><i class="bi bi-check-lg me-1"></i> Agendar Comité</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+
+            // Evento Click en la fila del Cronograma (Mapeo por Data Attributes Seguro)
+            $(".fila-reunion").click(function () {
+                $(".fila-reunion").removeClass("table-success-subtle table-active");
+                $(this).addClass("table-success-subtle table-active");
+
+                // Extracción limpia desde los data tags del TR
+                var idReunion = $(this).data("idreunion");
+                var fechaStr = $(this).data("fecha");
+                var lugar = $(this).data("lugar");
+                var horaIn = $(this).data("hora");
+                var horaFi = $(this).data("horafin");
+                var idSemillero = $(this).data("idsemillero");
+                var desc = $(this).data("desc");
+
+                // Carga de campos del panel inferior
+                $("#hdnIDReunion").val(idReunion);
+                $("#txtIDVisual").val(idReunion);
+                $("#txtFecha").val(fechaStr);
+                $("#txtLugar").val(lugar);
+                $("#txtHora").val(horaIn);
+                $("#txtHoraFin").val(horaFi);
+                $("#ddlSemillero").val(idSemillero);
+                $("#txtDescripcion").val(desc);
+
+                // Limpieza intermedia de checks de asistencia
+                $(".chk-usuario").prop("checked", false);
+
+                // Llamado asíncrono para mapear los checkboxes reales guardados en asistencia_reunion
+                $.ajax({
+                    url: '@Url.Action("ObtenerParticipantes", "Administrador")',
+                    type: 'GET',
+                    data: { idReunion: idReunion },
+                    success: function (ids) {
+                        if(ids) ids.forEach(i => $("#chk_" + i).prop("checked", true));
+                    }
+                });
+
+                // MUTACIÓN DEL CONTROL VISUAL (Modo Edición Activo)
+                $("#txtTituloFormulario").html('<i class="bi bi-pencil-square text-warning me-2"></i>Modificar Logística de la Reunión Seleccionada');
+                $("#btnResetForm").removeClass("d-none");
+                $("#btnAgregar").addClass("d-none");
+                $("#btnActualizar").removeClass("d-none");
+
+                // Scroll automático suave hacia el formulario
+                $('html, body').animate({ scrollTop: $("#txtTituloFormulario").offset().top - 100 }, 150);
+            });
+
+            // Validaciones del lado del cliente antes de enviar el formulario por POST
+            $("#formGestion").submit(function(e) {
+                var fechaInput = $("#txtFecha").val();
+                if(fechaInput) {
+                    var fechaVal = new Date(fechaInput + "T00:00:00");
+                    if (fechaVal.getDay() === 0) { // 0 corresponde a Domingo
+                        alert("Inconsistencia Operacional: No se permiten agendar comités institucionales los días domingo.");
+                        e.preventDefault();
+                    }
+                }
+            });
+
+            // OPERACIÓN AJAX: ELIMINACIÓN DE LA REUNIÓN
+            $("#btnEliminar").click(function () {
+                var id = $("#hdnIDReunion").val();
+                if (!id || id === "0") { alert("Por favor seleccione una reunión vigente del cronograma."); return; }
+
+                if (confirm("¿Está completamente seguro de eliminar esta reunión y borrar su historial de asistencia?")) {
+                    $.ajax({
+                        url: '@Url.Action("EliminarReunion", "Administrador")',
+                        type: 'POST',
+                        data: { idReunion: id },
+                        success: function (r) {
+                            if (r.success) { location.reload(); }
+                            else { alert("Error operacional: " + r.message); }
+                        }
+                    });
+                }
+            });
+        });
+
+        // Función para restaurar la UI al modo de creación limpia
+        function resetearFormularioReunion() {
+            $("#hdnIDReunion").val("0");
+            $("#txtIDVisual").val("");
+            $("#formGestion")[0].reset();
+            $(".chk-usuario").prop("checked", false);
+
+            $("#txtTituloFormulario").html('<i class="bi bi-pencil-square text-success me-2"></i>Detalles y Registro de Comité');
+            $("#btnResetForm").addClass("d-none");
+            $("#btnAgregar").removeClass("d-none");
+            $("#btnActualizar").addClass("d-none");
+            $(".fila-reunion").removeClass("table-success-subtle table-active");
+        }
+    </script>
+}

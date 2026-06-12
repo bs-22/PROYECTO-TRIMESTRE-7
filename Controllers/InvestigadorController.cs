@@ -1,8 +1,10 @@
 ﻿using GestionSemillero1.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using System.Globalization;
 
 namespace GestionSemillero1.Controllers
 {
@@ -10,45 +12,29 @@ namespace GestionSemillero1.Controllers
     {
         private DbSemillero db = new DbSemillero();
 
-        
-        public ActionResult Index(string criterioFiltro, string valorBusqueda)
+        // GET: Investigador/Index
+        public ActionResult Index(string criterio, string valor)
         {
-            Response.Cache.SetCacheability(HttpCacheability.NoCache);
-            Response.Cache.SetNoStore();
+            if (Session["IDUsuario"] == null) return RedirectToAction("Login", "Account");
 
-            if (Session["UsuarioLogueado"] == null || Session["TipoUsuario"]?.ToString().ToLower() != "investigador")
-                return RedirectToAction("Login", "Account");
+            decimal idUsuarioActual = Convert.ToDecimal(Session["IDUsuario"]);
 
-            var hoy = DateTime.Today;
-            var reunionesQuery = db.Reunion.AsQueryable();
+            // Filtramos las reuniones donde el ID del usuario aparece en asistencia_reunion
+            var reuniones = (from r in db.Reunion
+                             join a in db.AsistenciaReunion
+                             on r.ID_reunion equals a.ID_reunion
+                             where a.ID_usuario == idUsuarioActual
+                             select r).Distinct().AsQueryable();
 
-            // Filtrar próximas reuniones
-            reunionesQuery = reunionesQuery.Where(r => r.fecha_reunion >= hoy);
-
-            // Filtros dinámicos basados en tu BD real
-            if (!string.IsNullOrEmpty(criterioFiltro) && !string.IsNullOrEmpty(valorBusqueda))
+            if (!string.IsNullOrWhiteSpace(valor))
             {
-                string val = valorBusqueda.Trim().ToLower();
-
-                if (criterioFiltro == "ID" && int.TryParse(val, out int idVal))
-                {
-                    reunionesQuery = reunionesQuery.Where(r => r.ID_reunion == idVal);
-                }
-                else if (criterioFiltro == "Mes" && int.TryParse(val, out int mes))
-                {
-                    reunionesQuery = reunionesQuery.Where(r => r.fecha_reunion.Month == mes);
-                }
-                else if (criterioFiltro == "Fecha" && DateTime.TryParse(valorBusqueda, out DateTime fecha))
-                {
-                    reunionesQuery = reunionesQuery.Where(r => r.fecha_reunion == fecha);
-                }
+                if (criterio == "ID" && decimal.TryParse(valor, out decimal id))
+                    reuniones = reuniones.Where(r => r.ID_reunion == id);
+                else if (criterio == "Fecha" && DateTime.TryParse(valor, out DateTime fecha))
+                    reuniones = reuniones.Where(r => r.fecha_reunion == fecha);
             }
 
-            ViewBag.Reuniones = reunionesQuery.ToList();
-            ViewBag.CriterioActual = criterioFiltro;
-            ViewBag.ValorActual = valorBusqueda;
-
-            return View();
+            return View(reuniones.ToList());
         }
 
         protected override void Dispose(bool disposing)

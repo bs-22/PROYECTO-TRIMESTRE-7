@@ -1,31 +1,144 @@
 ﻿using GestionSemillero1.Models;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
+using System.Globalization;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
-using System.Dynamic;
 
 namespace GestionSemillero1.Controllers
 {
     public class LiderController : Controller
     {
         private DbSemillero db = new DbSemillero();
+        private const string LAYOUT_PATH = "~/Views/Shared/_Layout.cshtml";
 
-        // GET: Lider/Index
+        // GET: Lider/Index - Formulario principal de registro de reuniones
         public ActionResult Index()
         {
-            Response.Cache.SetCacheability(HttpCacheability.NoCache);
-            Response.Cache.SetNoStore();
-
             if (Session["UsuarioLogueado"] == null || Session["TipoUsuario"]?.ToString().ToLower() != "lider")
-            {
                 return RedirectToAction("Login", "Account");
+
+            var listaInvestigadores = db.investigadores.ToList() ?? new List<investigadores>();
+            return View(listaInvestigadores);
+        }
+
+        [HttpPost]
+        public ActionResult AsignarReunion(string descripcion_reunion, string hora_reunion, string hora_fin_reunion,
+                                    string lugar_reunion, string fecha_reunion, decimal[] investigadoresSeleccionados)
+        {
+            if (Session["IDUsuario"] == null) return RedirectToAction("Login", "Account");
+
+            decimal idLider = Convert.ToDecimal(Session["IDUsuario"]);
+
+            using (var transaccion = db.Database.BeginTransaction())
+            {
+                try
+                {
+                    DateTime fecha = DateTime.Parse(fecha_reunion);
+                    decimal siguienteId = 5001;
+                    var maxId = db.Database.SqlQuery<decimal?>("SELECT MAX(ID_reunion) FROM reunion").FirstOrDefault();
+                    if (maxId.HasValue) siguienteId = maxId.Value + 1;
+
+                    // 1. Insertar la reunión
+                    string sqlReunion = "INSERT INTO reunion (ID_reunion, descripcion_reunion, hora_reunion, hora_fin_reunion, lugar_reunion, fecha_reunion, ID_semillero, estado_reunion) " +
+                                        "VALUES (@id, @desc, @hini, @hfin, @lug, @fec, 2001, 'Programada')";
+
+                    db.Database.ExecuteSqlCommand(sqlReunion,
+                        new System.Data.SqlClient.SqlParameter("@id", siguienteId),
+                        new System.Data.SqlClient.SqlParameter("@desc", descripcion_reunion),
+                        new System.Data.SqlClient.SqlParameter("@hini", hora_reunion),
+                        new System.Data.SqlClient.SqlParameter("@hfin", hora_fin_reunion),
+                        new System.Data.SqlClient.SqlParameter("@lug", lugar_reunion),
+                        new System.Data.SqlClient.SqlParameter("@fec", fecha));
+
+                    // 2. Insertar al Líder como asistente
+                    InsertarAsistencia(siguienteId, idLider);
+
+                    // 3. Insertar investigadores seleccionados (CORREGIDO PARA SEGURIDAD TOTAL)
+                    if (investigadoresSeleccionados != null)
+                    {
+                        foreach (var idInv in investigadoresSeleccionados)
+                        {
+                            // 1. Buscamos al investigador primero
+                            var inv = db.investigadores.FirstOrDefault(i => i.ID_investigador == idInv);
+
+                            if (inv != null)
+                            {
+                                // 2. BUSCAMOS EL ID_USUARIO REAL basado en el correo vinculado
+                                // Esto garantiza que estamos usando el ID que el usuario usa para loguearse
+                                var usuarioReal = db.Usuarios.FirstOrDefault(u => u.ID_usuario == inv.ID_usuario);
+
+                                if (usuarioReal != null && usuarioReal.ID_usuario != idLider)
+                                {
+                                    // 3. Insertamos el ID de usuario verificado
+                                    InsertarAsistencia(siguienteId, usuarioReal.ID_usuario);
+                                }
+                            }
+                        }
+                    }
+
+                    transaccion.Commit();
+                    TempData["Success"] = "Reunión #" + siguienteId + " creada con éxito.";
+                }
+                catch (Exception ex)
+                {
+                    transaccion.Rollback();
+                    TempData["Error"] = "Error al guardar: " + ex.Message;
+                }
+            }
+            return RedirectToAction("Index");
+        }
+
+        // Método simplificado para evitar errores de conexión
+        private void InsertarAsistencia(decimal idR, decimal idU)
+        {
+            string sql = "INSERT INTO asistencia_reunion (ID_reunion, ID_usuario) VALUES (@idR, @idU)";
+            db.Database.ExecuteSqlCommand(sql,
+                new System.Data.SqlClient.SqlParameter("@idR", idR),
+                new System.Data.SqlClient.SqlParameter("@idU", idU));
+        }
+
+        // GET: Lider/ConsultarReuniones
+        public ActionResult ConsultarReuniones(string criterio, string valor)
+        {
+            if (Session["UsuarioLogueado"] == null || Session["IDUsuario"] == null)
+                return RedirectToAction("Login", "Account");
+
+            decimal idUsuarioActual = Convert.ToDecimal(Session["IDUsuario"]);
+
+            // Obtener IDs de reuniones donde el usuario es participante
+            var idsMisReuniones = db.AsistenciaReunion
+                                    .Where(a => a.ID_usuario == idUsuarioActual)
+                                    .Select(a => a.ID_reunion)
+                                    .ToList();
+
+            var reuniones = db.Reunion.Where(r => idsMisReuniones.Contains(r.ID_reunion)).AsQueryable();
+
+            // Lógica de filtros
+            if (!string.IsNullOrWhiteSpace(valor))
+            {
+                if (criterio == "ID" && decimal.TryParse(valor, out decimal id))
+                    reuniones = reuniones.Where(r => r.ID_reunion == id);
+                else if (criterio == "Fecha" && DateTime.TryParse(valor, out DateTime fecha))
+                    reuniones = reuniones.Where(r => r.fecha_reunion == fecha);
             }
 
-            ViewBag.Usuario = Session["UsuarioLogueado"].ToString();
-            return View();
+            return View(reuniones.ToList());
         }
+
+        // MÉTODOS AUXILIARES
+        private void AddParam(System.Data.Common.DbCommand cmd, string name, object value)
+        {
+            var p = cmd.CreateParameter();
+            p.ParameterName = name;
+            p.Value = value;
+            cmd.Parameters.Add(p);
+        }
+
+      
+    
 
         // GET: Lider/GestionarSemillero
         public ActionResult GestionarSemillero(string semilleroFiltro, string lineaFiltro, string fechaFiltro, string seccionCargada, decimal? idSemilleroSeccion4)
@@ -422,7 +535,7 @@ namespace GestionSemillero1.Controllers
                         {
                             e.ID_evento,
                             e.nombre_evento,
-                            e.descripcion_evento,
+                            e.descripción_evento,
                             e.fecha_evento,
                             s.nombre_semillero
                         };
@@ -454,7 +567,7 @@ namespace GestionSemillero1.Controllers
                 dynamic expando = new ExpandoObject();
                 expando.ID_evento = x.ID_evento;
                 expando.nombre_evento = x.nombre_evento;
-                expando.descripcion_evento = x.descripcion_evento;
+                expando.descripción_evento = x.descripción_evento;
                 expando.fecha_evento = x.fecha_evento;
                 expando.nombre_semillero = x.nombre_semillero;
                 return expando;
@@ -465,6 +578,7 @@ namespace GestionSemillero1.Controllers
 
             return View();
         }
+
     }
     
 }

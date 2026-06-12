@@ -1,0 +1,234 @@
+﻿@model IEnumerable<GestionSemillero1.Controllers.EventoListaDTO>
+@{
+    Layout = "~/Views/Shared/_LayoutAdministrador.cshtml";
+    ViewBag.Title = "Gestión de Eventos";
+    var eventos = Model;
+}
+
+<style>
+    /* Ajustes de optimización para tipografía y tablas */
+    .dashboard-card {
+        background: #ffffff;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .table th {
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
+    .table td {
+        font-size: 0.85rem;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+</style>
+
+<div class="container-fluid px-2" style="font-size: 0.9rem;">
+
+  
+
+    @if (TempData["ErrorEvento"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorEvento"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ExitoEvento"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["ExitoEvento"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-md-4">
+
+            <div class="card dashboard-card shadow-sm p-4 mb-4 bg-white">
+                <h5 class="card-title fw-bold text-dark mb-3" style="font-size: 1.05rem;"><i class="bi bi-search me-2 text-primary"></i>BÚSQUEDA DE EVENTOS</h5>
+                @using (Html.BeginForm("RegistrarEvento", "Administrador", FormMethod.Get))
+                {
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Por favor seleccione alguna de las siguientes opciones</label>
+                        <select name="criterio" class="form-select form-select-sm">
+                            <option value="nombre" @(ViewBag.CriterioSeleccionado == "nombre" ? "selected" : "")>Nombre del Evento</option>
+                            <option value="semillero" @(ViewBag.CriterioSeleccionado == "semillero" ? "selected" : "")>Semillero Asociado</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Ahora ingrese la información que quiere buscar</label>
+                        <input type="text" name="valor" class="form-control form-control-sm" placeholder="Escriba aquí su búsqueda..." value="@ViewBag.ValorBuscado" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Filtrar por Fecha Específica</label>
+                        <input type="date" name="fechaFiltro" class="form-control form-control-sm" value="@ViewBag.FechaFiltrada" />
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-sm btn-success text-white fw-bold py-2"><i class="bi bi-funnel-fill me-2"></i>Buscar con filtro</button>
+                        <a href="@Url.Action("RegistrarEvento","Administrador")" class="btn btn-outline-secondary btn-sm py-1.5"><i class="bi bi-arrow-clockwise me-1"></i>Limpiar filtros</a>
+                    </div>
+                }
+            </div>
+
+            <div class="card dashboard-card shadow-sm p-4 bg-white">
+                <h5 id="tituloFormulario" class="card-title fw-bold text-dark mb-3" style="font-size: 1.05rem;"><i class="bi bi-calendar-plus me-2 text-success"></i>REGISTRAR EVENTO</h5>
+                @using (Html.BeginForm("GuardarEvento", "Administrador", FormMethod.Post, new { id = "formEvento" }))
+                {
+                    <input type="hidden" id="txtIdEvento" name="ID_evento" value="0" />
+                    <input type="hidden" id="txtAccionCrud" name="accionCrud" value="agregar" />
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-secondary">ID Generado</label>
+                        <input type="text" class="form-control form-control-sm bg-light text-muted fw-bold" value="@ViewBag.NextEventoID" readonly id="lblIDMuestra" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-secondary">Nombre del Evento</label>
+                        <input type="text" name="nombre_evento" id="txtNombre" class="form-control form-control-sm" required maxlength="45" placeholder="Ej: Simposio I+D+I" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-secondary">Descripción General</label>
+                        <textarea name="descripción_evento" id="txtDescripcion" class="form-control form-control-sm" rows="2" required maxlength="100" placeholder="Objetivos o ponentes del evento..."></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-secondary">Fecha del Evento</label>
+                        <input type="date" name="fecha_evento" id="txtFecha" class="form-control form-control-sm" required onchange="validarFechaFutura()" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Semillero Organizador</label>
+                        <select name="ID_semillero" id="txtSemillero" class="form-select form-select-sm" required>
+                            <option value="">Seleccione Semillero...</option>
+                            @foreach (var sem in ViewBag.SemillerosDisponibles)
+                            {
+                                <option value="@sem.ID_semillero">@sem.nombre_semillero</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" id="btnSubmitForm" class="btn btn-sm btn-primary fw-bold py-2 shadow-sm">Guardar Registro</button>
+                        <button type="button" id="btnCancelarEdicion" class="btn btn-secondary btn-sm d-none" onclick="location.reload()">Cancelar Edición</button>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card dashboard-card shadow-sm p-4 bg-white h-100">
+                <div class="box-title d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold text-dark fs-6"><i class="bi bi-calendar3 text-primary me-2"></i>CRONOGRAMA INSTITUCIONAL DE EVENTOS Y PONENCIAS</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1.5 fw-bold">@eventos.Count() Activos</span>
+                </div>
+
+                <div class="table-responsive rounded border custom-scrollbar">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-secondary sticky-top sticky-table-header">
+                            <tr>
+                                <th>ID</th>
+                                <th>NOMBRE EVENTO</th>
+                                <th>DESCRIPCIÓN</th>
+                                <th class="text-center">FECHA</th>
+                                <th>SEMILLERO ASOCIADO</th>
+                                <th class="text-center">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!eventos.Any())
+                            {
+                                <tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-calendar-x fs-3 d-block mb-2 text-secondary"></i>No se encontraron eventos programados con los criterios ingresados.</td></tr>
+                            }
+                            @foreach (var e in eventos)
+                            {
+                                <tr>
+                                    <td class="fw-bold text-secondary font-monospace">#@e.ID_evento</td>
+                                    <td class="fw-bold text-dark">@e.nombre_evento</td>
+                                    <td class="text-muted small text-wrap" style="max-width: 220px;">@e.descripción_evento</td>
+                                    <td class="text-center"><span class="badge bg-light text-primary border border-primary-subtle px-2 py-1fw-bold"><i class="bi bi-calendar-event me-1"></i>@e.fecha_evento.ToString("yyyy-MM-dd")</span></td>
+                                    <td class="text-success fw-bold"><i class="bi bi-tree-fill small me-1"></i>@e.nombre_semillero</td>
+                                    <td class="text-center" style="width: 110px;">
+                                        <button type="button" class="btn btn-sm btn-warning me-1" onclick="cargarEventoParaEditar('@e.ID_evento', '@e.nombre_evento', '@e.descripción_evento', '@e.fecha_evento.ToString("yyyy-MM-dd")', '@e.ID_semillero')">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        @using (Html.BeginForm("GuardarEvento", "Administrador", FormMethod.Post, new { style = "display:inline", novalidate = "novalidate" }))
+                                        {
+                                            <input type="hidden" name="ID_evento" value="@e.ID_evento" />
+                                            <input type="hidden" name="accionCrud" value="eliminar" />
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro que desea eliminar esta ponencia/evento de forma permanente?')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Al cargar la vista, deshabilitamos la selección de fechas en el pasado
+    document.addEventListener("DOMContentLoaded", function () {
+        var hoy = new Date();
+        var dd = String(hoy.getDate()).padStart(2, '0');
+        var mm = String(hoy.getMonth() + 1).padStart(2, '0');
+        var yyyy = hoy.getFullYear();
+        var fechaMinima = yyyy + '-' + mm + '-' + dd;
+        if (document.getElementById("txtFecha")) {
+            document.getElementById("txtFecha").setAttribute("min", fechaMinima);
+        }
+    });
+
+    // Validación lógica estricta por si escriben la fecha manualmente
+    function validarFechaFutura() {
+        var fechaInput = document.getElementById("txtFecha").value;
+        var hoy = new Date().toISOString().split('T')[0];
+        if (fechaInput && fechaInput < hoy) {
+            alert("Inconsistencia: No se permiten programar ponencias o eventos en fechas que ya pasaron.");
+            document.getElementById("txtFecha").value = "";
+        }
+    }
+
+    // Carga los datos de la fila de la tabla directamente en el formulario de la izquierda
+    function cargarEventoParaEditar(id, nombre, descripcion, fecha, idSemillero) {
+        document.getElementById("txtFecha").removeAttribute("min");
+
+        document.getElementById("txtIdEvento").value = id;
+        document.getElementById("lblIDMuestra").value = id;
+        document.getElementById("txtNombre").value = nombre;
+        document.getElementById("txtDescripcion").value = descripcion;
+        document.getElementById("txtFecha").value = fecha;
+        document.getElementById("txtSemillero").value = idSemillero;
+
+        document.getElementById("txtAccionCrud").value = "actualizar";
+
+        // Modificar UI del panel de guardado
+        document.getElementById("tituloFormulario").innerHTML = '<i class="bi bi-pencil-square me-2 text-warning"></i>MODIFICAR EVENTO SELECCIONADO';
+        var btn = document.getElementById("btnSubmitForm");
+        btn.innerText = "Actualizar Cambios";
+        btn.classList.replace('btn-primary', 'btn-warning');
+        document.getElementById("btnCancelarEdicion").classList.remove('d-none');
+
+        // Desplazamiento suave para enfocar el formulario
+        $('html, body').animate({ scrollTop: $("#tituloFormulario").offset().top - 100 }, 150);
+    }
+</script>

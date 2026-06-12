@@ -1,0 +1,486 @@
+﻿@{
+    Layout = "~/Views/Shared/_LayoutAdministrador.cshtml";
+    ViewBag.Title = "Registrar Proyecto";
+    string pestañaActiva = ViewBag.PestañaCargada;
+}
+
+<style>
+    /* Estilos globales de modernización UI/UX */
+    .dashboard-card {
+        background: #ffffff;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .nav-tabs {
+        border-bottom: 2px solid #f1f5f9;
+    }
+
+        .nav-tabs .nav-link {
+            border: none;
+            color: #64748b;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+            .nav-tabs .nav-link:hover {
+                border-color: transparent;
+                color: #20c997;
+            }
+
+            .nav-tabs .nav-link.active {
+                color: #20c997;
+                background: transparent;
+                border-bottom-color: #20c997;
+            }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+    .sticky-table-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #f8fafc !important;
+    }
+</style>
+
+<div class="container-fluid px-2" style="font-size: 0.9rem;">
+
+  
+
+    @if (TempData["ErrorProyecto"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorProyecto"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <button class="nav-link @(pestañaActiva == "proyectos" || string.IsNullOrEmpty(pestañaActiva) ? "active" : "")" onclick="navegarPestañaLocal('proyectos')">
+                <i class="bi bi-1-circle-fill me-2"></i>1. Macroporoyectos
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(pestañaActiva == "fases" ? "active" : "")" onclick="navegarPestañaLocal('fases')">
+                <i class="bi bi-2-circle-fill me-2"></i>2. Fases Automáticas
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(pestañaActiva == "actividades" ? "active" : "")" onclick="navegarPestañaLocal('actividades')">
+                <i class="bi bi-3-circle-fill me-2"></i>3. Actividades del Cronograma
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+
+        <div class="tab-pane fade @(pestañaActiva == "proyectos" || string.IsNullOrEmpty(pestañaActiva) ? "show active" : "")">
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="card dashboard-card shadow-sm p-4 bg-white">
+                        <div class="box-title fw-bold text-dark fs-6 mb-3 border-bottom pb-2" id="titleFormProyecto">
+                            <i class="bi bi-plus-circle-fill text-success me-2"></i>Registrar Nuevo Proyecto Institucional
+                        </div>
+                        @using (Html.BeginForm("RegistrarProyecto", "Administrador", FormMethod.Post, new { id = "formProyecto" }))
+                        {
+                            <input type="hidden" name="tipoSubmit" value="proyectos" />
+                            <input type="hidden" id="crudProyecto" name="accionCrud" value="agregar" />
+
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label class="form-label fw-bold text-secondary mb-1">ID Mapeo</label>
+                                    <input type="text" name="ID_proyecto" id="txtIdProyecto" class="form-control form-control-sm bg-light text-muted fw-bold" value="@ViewBag.NextProyectoID" readonly />
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-bold text-secondary mb-1">Nombre del Proyecto</label>
+                                    <input type="text" name="nombre_proyecto" id="txtNombreProyecto" class="form-control form-control-sm" required placeholder="Ej: Sistema Integrado de Gestión" />
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-bold text-secondary mb-1">Core Principal / Actividad</label>
+                                    <input type="text" name="actividad_proyecto" id="txtActividadProyecto" class="form-control form-control-sm" required placeholder="Ej: Codificación Funcional Backend" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-secondary mb-1">Fecha de Inicio</label>
+                                    <input type="date" id="fecha_inicio" name="fecha_inicio_proyecto" class="form-control form-control-sm" required onchange="validarFechasProyecto()" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-secondary mb-1">Fecha de Finalización</label>
+                                    <input type="date" id="fecha_fin" name="fecha_fin_proyecto" class="form-control form-control-sm" required onchange="validarFechasProyecto()" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-secondary mb-1">Semillero Vinculado</label>
+                                    <select name="ID_semillero" id="ddlSemilleroProyecto" class="form-select form-select-sm" required>
+                                        <option value="">Seleccione el semillero...</option>
+                                        @foreach (var sem in ViewBag.SemillerosDisponibles)
+                                        {
+                                            <option value="@sem.ID_semillero">@sem.nombre_semillero</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2 mt-4 border-top pt-3">
+                                <button type="button" class="btn btn-secondary btn-sm fw-bold px-3 d-none" id="btnCancelProyecto" onclick="location.reload()">Cancelar Modificación</button>
+                                <button type="submit" class="btn btn-success btn-sm fw-bold px-4 shadow-sm" id="btnSubmitProyecto">Registrar Proyecto</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card dashboard-card shadow-sm p-4 bg-white">
+                        <div class="box-title fw-bold text-dark fs-6 mb-3"><i class="bi bi-table text-primary me-2"></i>Historial de Proyectos Activos</div>
+                        <div class="table-responsive rounded border custom-scrollbar">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID PROYECTO</th>
+                                        <th>NOMBRE PROYECTO</th>
+                                        <th>ENFOQUE / ACTIVIDAD</th>
+                                        <th>FECHA INICIO</th>
+                                        <th>FECHA FIN</th>
+                                        <th class="text-center">ACCIONES</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var p in ViewBag.ListaProyectos)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold text-secondary font-monospace">#@p.ID_proyecto</td>
+                                            <td class="fw-bold text-dark">@p.nombre_proyecto</td>
+                                            <td class="text-muted">@p.actividad_proyecto</td>
+                                            <td><span class="badge bg-light text-dark border"><i class="bi bi-calendar-check text-success me-1"></i>@p.fecha_inicio_proyecto.ToString("yyyy-MM-dd")</span></td>
+                                            <td><span class="badge bg-light text-dark border"><i class="bi bi-calendar-x text-danger me-1"></i>@p.fecha_fin_proyecto.ToString("yyyy-MM-dd")</span></td>
+                                            <td class="text-center" style="width: 120px;">
+                                                <button class="btn btn-sm btn-warning me-1" onclick="editarProyecto('@p.ID_proyecto', '@p.nombre_proyecto', '@p.actividad_proyecto', '@p.fecha_inicio_proyecto.ToString("yyyy-MM-dd")', '@p.fecha_fin_proyecto.ToString("yyyy-MM-dd")', '@p.ID_semillero')"><i class="bi bi-pencil"></i></button>
+                                                @using (Html.BeginForm("RegistrarProyecto", "Administrador", FormMethod.Post, new { style = "display:inline", novalidate = "novalidate" }))
+                                                {
+                                                    <input type="hidden" name="tipoSubmit" value="proyectos" /><input type="hidden" name="ID_proyecto" value="@p.ID_proyecto" /><input type="hidden" name="accionCrud" value="eliminar" />
+                                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Está seguro de eliminar este proyecto y todas sus fases asociadas?')"><i class="bi bi-trash"></i></button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade @(pestañaActiva == "fases" ? "show active" : "")">
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="card dashboard-card shadow-sm p-4 bg-white">
+                        <div class="box-title fw-bold text-dark fs-6 mb-3 border-bottom pb-2" id="titleFormFases">
+                            <i class="bi bi-plus-circle-fill text-primary me-2"></i>Registrar Fase Manual Personalizada
+                        </div>
+                        @using (Html.BeginForm("RegistrarProyecto", "Administrador", FormMethod.Post, new { id = "formFases" }))
+                        {
+                            <input type="hidden" name="tipoSubmit" value="fases" />
+                            <input type="hidden" id="crudFase" name="accionCrud" value="agregar" />
+
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label class="form-label fw-bold text-secondary mb-1">ID Fase</label>
+                                    <input type="text" name="ID_fase_proyecto" id="txtIdFase" class="form-control form-control-sm bg-light text-muted fw-bold" value="@ViewBag.NextFaseID" readonly />
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-bold text-secondary mb-1">Proyecto Padre</label>
+                                    <select name="ID_proyecto" id="ddlProyectoPadre" class="form-select form-select-sm" required>
+                                        <option value="">Asociar a Proyecto Macropadre...</option>
+                                        @foreach (var p in ViewBag.ProyectosDisponibles)
+                                        {
+                                            <option value="@p.ID_proyecto">@p.nombre_proyecto</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-bold text-secondary mb-1">Nombre de la Etapa / Fase</label>
+                                    <input type="text" name="nombre_fase_proyecto" id="txtNombreFase" class="form-control form-control-sm" required placeholder="Ej: Pruebas Unitarias de Aceptación" />
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold text-secondary mb-1">Descripción y Entregables de la Fase</label>
+                                    <textarea name="descripcion_fase_proyecto" id="txtDescFase" class="form-control form-control-sm" rows="2" required placeholder="Escriba los lineamientos de esta etapa..."></textarea>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2 mt-4 border-top pt-3">
+                                <button type="button" class="btn btn-secondary btn-sm fw-bold px-3 d-none" id="btnCancelFase" onclick="location.reload()">Cancelar</button>
+                                <button type="submit" class="btn btn-primary btn-sm fw-bold px-4 shadow-sm" id="btnSubmitFase">Guardar Etapa</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card dashboard-card shadow-sm p-4 bg-white">
+                        <div class="box-title fw-bold text-dark fs-6 mb-3"><i class="bi bi-table text-primary me-2"></i>Estructura de Ciclos de Vida (Fases por Proyecto)</div>
+                        <div class="table-responsive rounded border custom-scrollbar">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID FASE</th>
+                                        <th>PROYECTO PADRE VINCULADO</th>
+                                        <th>NOMBRE DE LA FASE</th>
+                                        <th>DESCRIPCIÓN DE LA ETAPA</th>
+                                        <th class="text-center">ACCIONES</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (GestionSemillero1.Controllers.FaseListaDTO f in ViewBag.ListaFases)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold text-secondary font-monospace">#@f.ID_fase_proyecto</td>
+                                            <td class="text-primary fw-bold">@f.nombre_proyecto</td>
+                                            <td class="fw-bold text-dark">@f.nombre_fase_proyecto</td>
+                                            <td class="text-muted small text-wrap" style="max-width: 350px;">@f.descripcion_fase_proyecto</td>
+                                            <td class="text-center" style="width: 120px;">
+                                                <button class="btn btn-sm btn-warning me-1" onclick="editarFase('@f.ID_fase_proyecto', '@f.ID_proyecto', '@f.nombre_fase_proyecto', '@f.descripcion_fase_proyecto')"><i class="bi bi-pencil"></i></button>
+                                                @using (Html.BeginForm("RegistrarProyecto", "Administrador", FormMethod.Post, new { style = "display:inline", novalidate = "novalidate" }))
+                                                {
+                                                    <input type="hidden" name="tipoSubmit" value="fases" /><input type="hidden" name="ID_fase_proyecto" value="@f.ID_fase_proyecto" /><input type="hidden" name="accionCrud" value="eliminar" />
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar esta fase de forma permanente?')"><i class="bi bi-trash"></i></button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade @(pestañaActiva == "actividades" ? "show active" : "")">
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="card dashboard-card shadow-sm p-4 bg-white">
+                        <div class="box-title fw-bold text-dark fs-6 mb-3 border-bottom pb-2" id="titleFormActividades">
+                            <i class="bi bi-plus-circle-fill text-success me-2"></i>Asignar Actividad Detallada al Cronograma
+                        </div>
+                        @using (Html.BeginForm("RegistrarProyecto", "Administrador", FormMethod.Post, new { id = "formActividades" }))
+                        {
+                            <input type="hidden" name="tipoSubmit" value="actividades" />
+                            <input type="hidden" id="crudActividad" name="accionCrud" value="agregar" />
+
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label class="form-label fw-bold text-secondary mb-1">ID Tarea</label>
+                                    <input type="text" name="ID_activida_proyecto" id="txtIdActividad" class="form-control form-control-sm bg-light text-muted fw-bold" value="@ViewBag.NextActividadID" readonly />
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-bold text-secondary mb-1">1. Filtrar por Proyecto</label>
+                                    <select id="selectorProyectoAct" class="form-select form-select-sm" onchange="filtrarFasesEnCascada()">
+                                        <option value="">Seleccione Proyecto...</option>
+                                        @foreach (var p in ViewBag.ProyectosDisponibles)
+                                        {
+                                            <option value="@p.ID_proyecto">@p.nombre_proyecto</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-bold text-secondary mb-1">2. Seleccione la Fase Específica</label>
+                                    <select id="selectorFaseAct" name="ID_fase_proyecto" class="form-select form-select-sm" required disabled>
+                                        <option value="">Seleccione primero un proyecto...</option>
+                                        @foreach (GestionSemillero1.Controllers.FaseListaDTO f in ViewBag.ListaFases)
+                                        {
+                                            <option value="@f.ID_fase_proyecto" data-proyecto="@f.ID_proyecto" style="display:none;">@f.nombre_fase_proyecto</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-secondary mb-1">Nombre de la Actividad</label>
+                                    <input type="text" name="nombre_actividad_proyecto" id="txtNombreActividad" class="form-control form-control-sm" required placeholder="Ej: Diseño de diagramas de secuencia" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-secondary mb-1">Fecha de Apertura</label>
+                                    <input type="date" id="fecha_inicio_act" name="fecha_inicio_actividad_proyecto" class="form-control form-control-sm" required onchange="validarFechasActividad()" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-secondary mb-1">Fecha de Cierre</label>
+                                    <input type="date" id="fecha_fin_act" name="fecha_fin_actividad_proyecto" class="form-control form-control-sm" required onchange="validarFechasActividad()" />
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold text-secondary mb-1">Descripción de Objetivos o Requerimientos</label>
+                                    <input type="text" name="descripcion_actividad_proyecto" id="txtDescActividad" class="form-control form-control-sm" required placeholder="Describa brevemente los entregables esperados..." />
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2 mt-4 border-top pt-3">
+                                <button type="button" class="btn btn-secondary btn-sm fw-bold px-3 d-none" id="btnCancelActividad" onclick="location.reload()">Cancelar</button>
+                                <button type="submit" class="btn btn-success btn-sm fw-bold px-4 shadow-sm" id="btnSubmitActividad">Guardar Tarea</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card dashboard-card shadow-sm p-4 bg-white">
+                        <div class="box-title fw-bold text-dark fs-6 mb-3"><i class="bi bi-table text-primary me-2"></i>Cronograma de Tareas y Compromisos Operacionales</div>
+                        <div class="table-responsive rounded border custom-scrollbar">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID TAREA</th>
+                                        <th>FASE RELACIONADA</th>
+                                        <th>NOMBRE ACTIVIDAD / COMPROMISO</th>
+                                        <th>INICIO</th>
+                                        <th>FIN</th>
+                                        <th class="text-center">ACCIONES</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var a in ViewBag.ListaActividades)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold text-secondary font-monospace">#@a.ID_activida_proyecto</td>
+                                            <td class="text-success fw-bold"><i class="bi bi-bookmark-fill me-1"></i>@a.nombre_fase_proyecto</td>
+                                            <td class="text-dark fw-semibold">@a.nombre_actividad_proyecto</td>
+                                            <td><span class="badge bg-light text-secondary border">@a.fecha_inicio_actividad_proyecto.ToString("yyyy-MM-dd")</span></td>
+                                            <td><span class="badge bg-light text-secondary border">@a.fecha_fin_actividad_proyecto.ToString("yyyy-MM-dd")</span></td>
+                                            <td class="text-center" style="width: 120px;">
+                                                <button class="btn btn-sm btn-warning me-1" onclick="editarActividad('@a.ID_activida_proyecto', '@a.ID_fase_proyecto', '@a.nombre_actividad_proyecto', '@a.fecha_inicio_actividad_proyecto.ToString("yyyy-MM-dd")', '@a.fecha_fin_actividad_proyecto.ToString("yyyy-MM-dd")', '@a.descripcion_actividad_proyecto')"><i class="bi bi-pencil"></i></button>
+                                                @using (Html.BeginForm("RegistrarProyecto", "Administrador", FormMethod.Post, new { style = "display:inline", novalidate = "novalidate" }))
+                                                {
+                                                    <input type="hidden" name="tipoSubmit" value="actividades" /><input type="hidden" name="ID_activida_proyecto" value="@a.ID_activida_proyecto" /><input type="hidden" name="accionCrud" value="eliminar" />
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar esta actividad del cronograma?')"><i class="bi bi-trash"></i></button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function navegarPestañaLocal(pestaña) { window.location.href = `@Url.Action("RegistrarProyecto", "Administrador")?pestañaActiva=` + pestaña; }
+
+    // Bloqueo nativo de fechas pasadas al cargar la vista
+    document.addEventListener("DOMContentLoaded", function() {
+        var hoy = new Date();
+        var dd = String(hoy.getDate()).padStart(2, '0');
+        var mm = String(hoy.getMonth() + 1).padStart(2, '0');
+        var yyyy = hoy.getFullYear();
+        var fechaMinima = yyyy + '-' + mm + '-' + dd;
+
+        if(document.getElementById("fecha_inicio")) document.getElementById("fecha_inicio").setAttribute("min", fechaMinima);
+        if(document.getElementById("fecha_fin")) document.getElementById("fecha_fin").setAttribute("min", fechaMinima);
+        if(document.getElementById("fecha_inicio_act")) document.getElementById("fecha_inicio_act").setAttribute("min", fechaMinima);
+        if(document.getElementById("fecha_fin_act")) document.getElementById("fecha_fin_act").setAttribute("min", fechaMinima);
+    });
+
+    // JavaScript: Filtro relacional jerárquico en cascada (Proyecto -> Fases)
+    function filtrarFasesEnCascada() {
+        var idProyecto = document.getElementById("selectorProyectoAct").value;
+        var selectFase = document.getElementById("selectorFaseAct");
+        var opciones = selectFase.options;
+
+        selectFase.value = "";
+        if (idProyecto === "") { selectFase.disabled = true; return; }
+        selectFase.disabled = false;
+
+        for (var i = 0; i < opciones.length; i++) {
+            var el = opciones[i];
+            if (el.getAttribute("data-proyecto") == idProyecto || el.value === "") { el.style.display = "block"; }
+            else { el.style.display = "none"; }
+        }
+    }
+
+    // Validaciones lógicas estrictas para fechas de Proyectos
+    function validarFechasProyecto() {
+        var inicio = document.getElementById("fecha_inicio").value;
+        var fin = document.getElementById("fecha_fin").value;
+        var hoy = new Date().toISOString().split('T')[0];
+        if (inicio && inicio < hoy) { alert("Inconsistencia: La fecha de inicio no puede pertenecer al pasado."); document.getElementById("fecha_inicio").value = ""; return; }
+        if (fin && fin < hoy) { alert("Inconsistencia: La fecha de fin no puede pertenecer al pasado."); document.getElementById("fecha_fin").value = ""; return; }
+        if (inicio && fin && fin < inicio) { alert("Inconsistencia: La fecha de cierre debe ser posterior a la de apertura."); document.getElementById("fecha_fin").value = ""; }
+    }
+
+    // Validaciones lógicas estrictas para fechas de Actividades
+    function validarFechasActividad() {
+        var inicio = document.getElementById("fecha_inicio_act").value;
+        var fin = document.getElementById("fecha_fin_act").value;
+        var hoy = new Date().toISOString().split('T')[0];
+        if (inicio && inicio < hoy) { alert("Inconsistencia: Inicio inválido."); document.getElementById("fecha_inicio_act").value = ""; return; }
+        if (fin && fin < hoy) { alert("Inconsistencia: Cierre inválido."); document.getElementById("fecha_fin_act").value = ""; return; }
+        if (inicio && fin && fin < inicio) { alert("Inconsistencia: El cierre debe ser posterior al inicio."); document.getElementById("fecha_fin_act").value = ""; }
+    }
+
+    // Inyección dinámica de datos: Modo Edición de Proyectos
+    function editarProyecto(id, nom, act, fIni, fFin, idSem) {
+        document.querySelector('#formProyecto input[name="ID_proyecto"]').value = id;
+        document.querySelector('#formProyecto input[name="nombre_proyecto"]').value = nom;
+        document.querySelector('#formProyecto input[name="actividad_proyecto"]').value = act;
+        document.getElementById("fecha_inicio").value = fIni;
+        document.getElementById("fecha_fin").value = fFin;
+        document.querySelector('#formProyecto select[name="ID_semillero"]').value = idSem;
+
+        // Mutación visual del estado del botón
+        $("#titleFormProyecto").html('<i class="bi bi-pencil-square text-warning me-2"></i>Actualizar Parámetros del Proyecto Macropadre');
+        $("#btnCancelProyecto").removeClass("d-none");
+        const btn = document.querySelector('#formProyecto button[type="submit"]');
+        btn.innerText = "Confirmar Actualización"; btn.value = "actualizar"; btn.classList.replace('btn-success', 'btn-warning');
+        $("#crudProyecto").val("actualizar");
+    }
+
+    // Inyección dinámica de datos: Modo Edición de Fases
+    function editarFase(id, idProyecto, nombre, desc) {
+        document.querySelector('#formFases input[name="ID_fase_proyecto"]').value = id;
+        document.querySelector('#formFases select[name="ID_proyecto"]').value = idProyecto;
+        document.querySelector('#formFases input[name="nombre_fase_proyecto"]').value = nombre;
+        document.querySelector('#formFases textarea[name="descripcion_fase_proyecto"]').value = desc;
+
+        // Mutación visual del estado del botón
+        $("#titleFormFases").html('<i class="bi bi-pencil-square text-warning me-2"></i>Actualizar Lineamientos de la Fase Fija');
+        $("#btnCancelFase").removeClass("d-none");
+        const btn = document.querySelector('#formFases button[type="submit"]');
+        btn.innerText = "Confirmar Actualización"; btn.value = "actualizar"; btn.classList.replace('btn-success', 'btn-warning');
+        $("#crudFase").val("actualizar");
+    }
+
+    // Inyección dinámica de datos: Modo Edición de Actividades
+    function editarActividad(id, idFase, nombre, fIni, fFin, desc) {
+        document.getElementById("fecha_inicio_act").removeAttribute("min");
+        document.getElementById("fecha_fin_act").removeAttribute("min");
+
+        document.querySelector('#formActividades input[name="ID_activida_proyecto"]').value = id;
+        document.querySelector('#formActividades select[name="ID_fase_proyecto"]').value = idFase;
+        document.querySelector('#formActividades input[name="nombre_actividad_proyecto"]').value = nombre;
+        document.getElementById("fecha_inicio_act").value = fIni;
+        document.getElementById("fecha_fin_act").value = fFin;
+        document.querySelector('#formActividades input[name="descripcion_actividad_proyecto"]').value = desc;
+
+        // Mutación visual del estado del botón
+        $("#titleFormActividades").html('<i class="bi bi-pencil-square text-warning me-2"></i>Actualizar Parámetros del Compromiso o Actividad');
+        $("#btnCancelActividad").removeClass("d-none");
+        const btn = document.querySelector('#formActividades button[type="submit"]');
+        btn.innerText = "Confirmar Actualización"; btn.value = "actualizar"; btn.classList.replace('btn-success', 'btn-warning');
+        $("#crudActividad").val("actualizar");
+    }
+</script>

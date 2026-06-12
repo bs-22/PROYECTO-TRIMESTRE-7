@@ -1,0 +1,50 @@
+﻿/* Estilos para el dashboard del investigador */
+.main-content {
+    padding: 20px;
+    background-color: #f8f9fa;
+    min-height: 80vh;
+}
+
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+    background-color: #fff;
+    border-collapse: collapse;
+}
+
+    .table th, .table td {
+        padding: 0.75rem;
+        vertical-align: top;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .table thead th {
+        background-color: #27ae60; /* Color verde corporativo */
+        color: white;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+/* Botones personalizados */
+.btn-buscar {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+    border: none;
+    padding: 8px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+    .btn-buscar:hover {
+        background: linear-gradient(135deg, #27ae60, #1e8449);
+    }
+
+/* Estilos para inputs */
+.form-input-custom {
+    border: 1.5px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    width: 100%;
+}

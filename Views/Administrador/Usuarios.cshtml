@@ -1,0 +1,377 @@
+﻿@model IEnumerable<GestionSemillero1.Models.UsuarioGestionViewModel>
+@{
+    ViewBag.Title = "Gestión de Usuarios";
+    Layout = "~/Views/Shared/_LayoutAdministrador.cshtml";
+}
+
+<style>
+    /* Estilos de alta fidelidad UI/UX */
+    .filter-card, .dashboard-card {
+        background: #white;
+        border: none;
+        border-radius: 12px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+    .sticky-table-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #f8fafc !important;
+    }
+</style>
+
+<div class="container-fluid px-2" style="font-size: 0.9rem;">
+    <div class="row g-4">
+
+        <div class="col-md-3">
+            <div class="card filter-card shadow-sm p-4 bg-white h-100">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="p-2 bg-success-subtle text-success rounded-3 me-2">
+                        <i class="bi bi-funnel-fill fs-5"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark m-0" style="font-size: 1.1rem;">Filtro de búsqueda</h5>
+                </div>
+
+                <p class="text-muted small mb-4">Seleccione el criterio e ingrese el término para refinar la lista de investigadores.</p>
+
+                @using (Html.BeginForm("Usuarios", "Administrador", FormMethod.Get))
+                {
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Criterio de filtro</label>
+                        <select class="form-select form-select-sm" id="comboFiltro" name="criterio" required>
+                            <option value="todos" @(ViewBag.CriterioSeleccionado == "todos" ? "selected" : "")>-- Mostrar Todos --</option>
+                            <option value="nombre" @(ViewBag.CriterioSeleccionado == "nombre" ? "selected" : "")>Nombre / Apellido</option>
+                            <option value="documento" @(ViewBag.CriterioSeleccionado == "documento" ? "selected" : "")>Tipo de Documento</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-secondary">Término a buscar</label>
+                        <input type="text" id="txtBuscarFiltro" name="valor" class="form-control form-control-sm" placeholder="Escriba el valor de búsqueda..." value="@ViewBag.ValorBuscado">
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-sm btn-success fw-bold py-2 shadow-sm" id="btnFiltrar">
+                            <i class="bi bi-search me-1"></i> Filtrar Personal
+                        </button>
+                        <a href="@Url.Action("Usuarios", "Administrador")" class="btn btn-sm btn-outline-secondary py-2 text-decoration-none text-center">
+                            <i class="bi bi-arrow-counterclockwise"></i> Restablecer vista
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="card dashboard-card shadow-sm p-4 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                    <div class="box-title fw-bold text-dark fs-6" id="txtTituloFormulario">
+                        <i class="bi bi-person-plus-fill text-success me-2"></i>Registrar Nuevo Investigador
+                    </div>
+                    <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none d-none" id="btnResetForm" onclick="resetearFormularioUsuario()">
+                        <i class="bi bi-arrow-left-short"></i> Cancelar / Nuevo Registro
+                    </button>
+                </div>
+
+                @using (Html.BeginForm("GuardarUsuario", "Administrador", FormMethod.Post, new { id = "formFormularioUsuario" }))
+                {
+                    <input type="hidden" id="hdnIDInvestigador" name="ID_investigador" value="0" />
+                    <input type="hidden" id="hdnIDUsuario" name="ID_usuario" value="0" />
+
+                    <div class="row g-3" style="font-size: 0.85rem;">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary mb-1">Nombre(s)</label>
+                            <input type="text" class="form-control form-control-sm" id="txtNombre" name="nombre_investigador" required placeholder="Nombres completos" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary mb-1">Apellido(s)</label>
+                            <input type="text" class="form-control form-control-sm" id="txtApellido" name="apellido_investigador" required placeholder="Apellidos completos" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary mb-1">Correo Electrónico</label>
+                            <input type="email" class="form-control form-control-sm" id="txtCorreo" name="correo_usuario" required placeholder="ejemplo@sena.edu.co" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold text-secondary mb-1">Edad</label>
+                            <input type="number" class="form-control form-control-sm" id="txtEdad" name="edad_investigador" required min="15" max="99" placeholder="Años" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-secondary mb-1">Teléfono Móvil</label>
+                            <input type="number" class="form-control form-control-sm" id="txtTelefono" name="telefono_investigador" required placeholder="Ej: 3001234567" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-secondary mb-1">Tipo Documento</label>
+                            <select class="form-select form-select-sm" id="ddlTipoDoc" name="tipo_documento" required>
+                                <option value="CC">Cédula de Ciudadanía (CC)</option>
+                                <option value="TI">Tarjeta de Identidad (TI)</option>
+                                <option value="CE">Cédula de Extranjería (CE)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary mb-1" id="lblClave">Contraseña de Acceso</label>
+                            <input type="password" class="form-control form-control-sm" id="txtContrasena" name="contraseña_usuario" required placeholder="Asigne clave de ingreso" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary mb-1">Rol de Sistema</label>
+                            <select class="form-select form-select-sm" id="ddlRol" name="tipo_usuario" required>
+                                <option value="Investigador">Investigador Aprendiz</option>
+                                <option value="Lider">Líder Instructor</option>
+                                <option value="Administrador">Administrador</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary mb-1">Estado de Cuenta</label>
+                            <select class="form-select form-select-sm" id="ddlEstado" name="estado_usuario" required>
+                                <option value="Activo">Activo / Habilitado</option>
+                                <option value="Inactivo">Inactivo / Suspendido</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary mb-1">Semillero Vinculado</label>
+                            <select class="form-select form-select-sm" id="ddlSemillero" name="ID_semillero" required>
+                                <option value="">-- Seleccione semillero --</option>
+                                @foreach (var sem in ViewBag.ComboSemilleros as List<GestionSemillero1.Models.semillero>)
+                                {
+                                    <option value="@sem.ID_semillero">@sem.nombre_semillero</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 border-top pt-3">
+                        <button type="button" class="btn btn-danger btn-sm fw-bold px-4 shadow-sm d-none" id="btnDeshabilitar"><i class="bi bi-trash3-fill me-1"></i> Eliminar (Inactivar)</button>
+                        <button type="button" class="btn btn-success btn-sm fw-bold px-4 shadow-sm d-none" id="btnHabilitar"><i class="bi bi-shield-check-fill me-1"></i> Reactivar Cuenta</button>
+                        <button type="button" class="btn btn-warning text-dark btn-sm fw-bold px-4 shadow-sm d-none" id="btnActualizar"><i class="bi bi-arrow-repeat me-1"></i> Actualizar Usuario</button>
+                        <button type="submit" class="btn btn-success btn-sm fw-bold px-4 shadow-sm" id="btnAgregar"><i class="bi bi-person-plus-fill me-1"></i> Guardar Usuario</button>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-12 mt-2">
+            <div class="card dashboard-card shadow-sm p-4 bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="box-title fw-bold text-dark fs-6">
+                        <i class="bi bi-table text-primary me-2"></i>Base de Datos Completa de Investigadores y Personal Asignado
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-bold px-3 py-1.5 rounded-pill">@Model.Count() Cuentas Registradas</span>
+                </div>
+
+                <div class="table-responsive rounded border custom-scrollbar">
+                    <table class="table table-hover align-middle mb-0 text-nowrap" style="font-size: 0.85rem;">
+                        <thead class="table-light sticky-top sticky-table-header">
+                            <tr>
+                                <th>ID INV.</th>
+                                <th>NOMBRES</th>
+                                <th>APELLIDOS</th>
+                                <th class="text-center">DOC.</th>
+                                <th class="text-center">EDAD</th>
+                                <th>TELÉFONO</th>
+                                <th>CORREO ELECTRÓNICO</th>
+                                <th>ROL / CARGO</th>
+                                <th class="text-center">ESTADO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr style="cursor: pointer;" class="fila-usuario"
+                                    data-idinvestigador="@item.ID_investigador"
+                                    data-nombre="@item.nombre_investigador"
+                                    data-apellido="@item.apellido_investigador"
+                                    data-correo="@item.correo_usuario"
+                                    data-documento="@item.tipo_documento"
+                                    data-edad="@item.edad_investigador"
+                                    data-telefono="@item.telefono_investigador"
+                                    data-rol="@item.tipo_usuario"
+                                    data-idusuario="@item.ID_usuario"
+                                    data-idsemillero="@item.ID_semillero"
+                                    data-estado="@item.estado_usuario">
+                                    <td class="fw-bold text-secondary font-monospace">#@item.ID_investigador</td>
+                                    <td class="text-dark fw-bold">@item.nombre_investigador</td>
+                                    <td class="text-dark fw-bold">@item.apellido_investigador</td>
+                                    <td class="text-center"><span class="badge bg-light text-dark border">@item.tipo_documento</span></td>
+                                    <td class="text-center">@item.edad_investigador años</td>
+                                    <td><i class="bi bi-telephone text-muted me-1"></i>@item.telefono_investigador</td>
+                                    <td class="text-primary fw-semibold">@item.correo_usuario</td>
+                                    <td>
+                                        @if (item.tipo_usuario == "Administrador")
+                                        {<span class="text-danger fw-bold"><i class="bi bi-shield-lock me-1"></i>Admin</span> }
+                                        else if (item.tipo_usuario == "Lider")
+                                        { <span class="text-warning fw-bold"><i class="bi bi-person-workspace me-1"></i>Líder</span> }
+                                        else
+                                        { <span class="text-secondary"><i class="bi bi-journal-code me-1"></i>Aprendiz</span>}
+                                    </td>
+                                    <td class="text-center">
+                                        @if (item.estado_usuario.ToLower() == "activo")
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill fw-bold">Activo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 rounded-pill fw-bold">Inactivo</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+
+            // Evento Click en la Fila de Investigadores
+            $(".fila-usuario").click(function () {
+                $(".fila-usuario").removeClass("table-success-subtle table-active");
+                $(this).addClass("table-success-subtle table-active");
+
+                // Extracción segura por Data Attributes nativos
+                var idInvestigador = $(this).data("idinvestigador");
+                var idUsuario = $(this).data("idusuario");
+                var nombre = $(this).data("nombre");
+                var apellido = $(this).data("apellido");
+                var correo = $(this).data("correo");
+                var tipoDoc = $(this).data("documento");
+                var edad = $(this).data("edad");
+                var telephone = $(this).data("telefono");
+                var rol = $(this).data("rol");
+                var idSemillero = $(this).data("idsemillero");
+                var estado = $(this).data("estado").toString().toLowerCase();
+
+                // Carga de la información al formulario
+                $("#hdnIDInvestigador").val(idInvestigador);
+                $("#hdnIDUsuario").val(idUsuario);
+                $("#txtNombre").val(nombre);
+                $("#txtApellido").val(apellido);
+                $("#txtEdad").val(edad);
+                $("#txtTelefono").val(telephone);
+                $("#txtCorreo").val(correo);
+
+                // Formateo visual seguro para la contraseña en modo edición
+                $("#txtContrasena").val("********").attr("placeholder", "Omitir para mantener clave actual");
+                $("#txtContrasena").removeAttr("required");
+                $("#lblClave").text("Nueva Contraseña (Opcional)");
+
+                $("#ddlTipoDoc").val(tipoDoc);
+                $("#ddlEstado").val(estado === "activo" ? "Activo" : "Inactivo");
+                $("#ddlRol").val(rol);
+                $("#ddlSemillero").val(idSemillero);
+
+                // MUTACIÓN VISUAL DEL MODO EDICIÓN
+                $("#txtTituloFormulario").html('<i class="bi bi-pencil-square text-warning me-2"></i>Modificar Información del Investigador Seleccionado');
+                $("#btnResetForm").removeClass("d-none");
+                $("#btnAgregar").addClass("d-none");
+                $("#btnActualizar").removeClass("d-none");
+
+                if (estado === "activo") {
+                    $("#btnDeshabilitar").removeClass("d-none");
+                    $("#btnHabilitar").addClass("d-none");
+                } else {
+                    $("#btnHabilitar").removeClass("d-none");
+                    $("#btnDeshabilitar").addClass("d-none");
+                }
+
+                // Desplazamiento automático suave hacia el formulario
+                $('html, body').animate({ scrollTop: $("#txtTituloFormulario").offset().top - 100 }, 150);
+            });
+
+            // ACCIÓN AJAX: ACTUALIZAR DATOS
+            $("#btnActualizar").click(function () {
+                var idInv = $("#hdnIDInvestigador").val();
+                if (!idInv || idInv === "0") { alert("Por favor, seleccione un registro de la tabla."); return; }
+
+                var formData = $("#formFormularioUsuario").serialize();
+                $.ajax({
+                    url: '@Url.Action("ActualizarUsuario", "Administrador")',
+                    type: 'POST',
+                    data: formData,
+                    success: function (response) {
+                        if (response.success) { alert(response.message); location.reload(); }
+                        else { alert("Error operacional: " + response.message); }
+                    }
+                });
+            });
+
+            // ACCIÓN AJAX: ELIMINAR / DESHABILITAR CUENTA
+            $("#btnDeshabilitar").click(function () {
+                var idUsu = $("#hdnIDUsuario").val();
+                if (!idUsu || idUsu === "0") { alert("Seleccione un usuario activo."); return; }
+
+                if (confirm("¿Está seguro de que desea deshabilitar y suspender esta cuenta del semillero?")) {
+                    $.ajax({
+                        url: '@Url.Action("DeshabilitarUsuario", "Administrador")',
+                        type: 'POST',
+                        data: { idUsuario: idUsu },
+                        success: function (response) {
+                            if (response.success) { alert(response.message); location.reload(); }
+                            else { alert("Error operacional: " + response.message); }
+                        }
+                    });
+                }
+            });
+
+            // ACCIÓN AJAX: RE-HABILITAR CUENTA
+            $("#btnHabilitar").click(function () {
+                var idUsu = $("#hdnIDUsuario").val();
+                if (!idUsu || idUsu === "0") { alert("Seleccione un usuario inactivo."); return; }
+
+                $.ajax({
+                    url: '@Url.Action("HabilitarUsuario", "Administrador")',
+                    type: 'POST',
+                    data: { idUsuario: idUsu },
+                    success: function (response) {
+                        if (response.success) { alert(response.message); location.reload(); }
+                        else { alert("Error operacional: " + response.message); }
+                    }
+                });
+            });
+        });
+
+        // Restaurar estado nativo de inserción limpia
+        function resetearFormularioUsuario() {
+            $("#hdnIDInvestigador").val("0");
+            $("#hdnIDUsuario").val("0");
+            $("#formFormularioUsuario")[0].reset();
+
+            $("#txtContrasena").attr("required", "required").attr("placeholder", "Asigne clave de ingreso");
+            $("#lblClave").text("Contraseña de Acceso");
+
+            $("#txtTituloFormulario").html('<i class="bi bi-person-plus-fill text-success me-2"></i>Registrar Nuevo Investigador');
+            $("#btnResetForm").addClass("d-none");
+            $("#btnAgregar").removeClass("d-none");
+
+            $("#btnActualizar").addClass("d-none");
+            $("#btnHabilitar").addClass("d-none");
+            $("#btnDeshabilitar").addClass("d-none");
+            $(".fila-usuario").removeClass("table-success-subtle table-active");
+        }
+    </script>
+}

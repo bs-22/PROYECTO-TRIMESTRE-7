@@ -44,5 +44,13 @@ namespace GestionSemillero1.Models
         [Required]
         [Column("ID_semillero")]
         public decimal ID_semillero { get; set; }
+
+        // ====== AGREGA ESTAS LÍNEAS AL FINAL ======
+        [ForeignKey("ID_usuario")]
+        public virtual Usuario Usuario { get; set; }
+
+        [ForeignKey("ID_semillero")]
+        public virtual semillero semillero { get; set; }
+
     }
 }
