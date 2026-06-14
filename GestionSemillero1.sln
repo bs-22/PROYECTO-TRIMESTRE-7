@@ -5,6 +5,8 @@ VisualStudioVersion = 17.14.36623.8
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GestionSemillero1", "GestionSemillero1.csproj", "{EFD73DCD-92C7-4EC3-9AC1-587BD671BEE4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GestionSemillero1test", "..\..\..\..\Pictures\Test 7\GestionSemillero1test\GestionSemillero1test.csproj", "{00C07583-6493-40D9-8797-CBD484E1A640}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{EFD73DCD-92C7-4EC3-9AC1-587BD671BEE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EFD73DCD-92C7-4EC3-9AC1-587BD671BEE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EFD73DCD-92C7-4EC3-9AC1-587BD671BEE4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00C07583-6493-40D9-8797-CBD484E1A640}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00C07583-6493-40D9-8797-CBD484E1A640}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00C07583-6493-40D9-8797-CBD484E1A640}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00C07583-6493-40D9-8797-CBD484E1A640}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

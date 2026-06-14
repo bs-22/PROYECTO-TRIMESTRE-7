@@ -1,0 +1,126 @@
+﻿@{
+    ViewBag.Title = "Central de Reportes Institucionales";
+    Layout = "~/Views/Shared/_LayoutAdministrador.cshtml";
+}
+
+<style>
+    .card-btn-reporte {
+        background: #ffffff;
+        border: none;
+        border-radius: 12px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+    }
+
+        .card-btn-reporte:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+        }
+
+    .badge-icon {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
+<div class="container-fluid px-3 mt-3" style="font-size: 0.9rem;">
+
+    <div class="d-flex align-items-center mb-4">
+        <div class="p-2 bg-success-subtle text-success rounded-3 me-3">
+            <i class="bi bi-printer-fill fs-4"></i>
+        </div>
+        <div>
+            <h4 class="fw-bold text-dark m-0">Módulo de Impresión y Reportes Dinámicos</h4>
+            <small class="text-muted">Seleccione un formato preestablecido de Crystal Reports para compilar los entregables PDF.</small>
+        </div>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger small py-2 fw-semibold mb-4">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+        </div>
+    }
+
+    @using (Html.BeginForm("GenerarCrystalReport", "Administrador", FormMethod.Post, new { id = "formCrystalReport" }))
+    {
+        <input type="hidden" id="nombreReporte" name="nombreReporte" value="" />
+
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-primary" onclick="descargarReportePDF('Reporte_Investigadores_General')">
+                    <div class="d-flex align-items-center">
+                        <div class="badge-icon bg-primary-subtle text-primary rounded-3 me-3"><i class="bi bi-people-fill fs-5"></i></div>
+                        <div>
+                            <h6 class="fw-bold text-dark m-0">Investigadores Generales</h6>
+                            <small class="text-muted">Lista total de aprendices por semillero.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-warning" onclick="descargarReportePDF('Reporte_Lideres_General')">
+                    <div class="d-flex align-items-center">
+                        <div class="badge-icon bg-warning-subtle text-warning rounded-3"><i class="bi bi-person-workspace fs-5"></i></div>
+                        <div class="ms-3">
+                            <h6 class="fw-bold text-dark m-0">Líderes de Investigación</h6>
+                            <small class="text-muted">Instructores asignados a proyectos.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-success" onclick="descargarReportePDF('Reporte_Semilleros_Lineas')">
+                    <div class="d-flex align-items-center">
+                        <div class="badge-icon bg-success-subtle text-success rounded-3"><i class="bi bi-tree-fill fs-5"></i></div>
+                        <div class="ms-3">
+                            <h6 class="fw-bold text-dark m-0">Semilleros y Temáticas</h6>
+                            <small class="text-muted">Conteo de semilleros y sus líneas.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-info" onclick="descargarReportePDF('Reporte_Proyectos_Eventos')">
+                    <div class="d-flex align-items-center">
+                        <div class="badge-icon bg-info-subtle text-info rounded-3"><i class="bi bi-collection-fill fs-5"></i></div>
+                        <div class="ms-3">
+                            <h6 class="fw-bold text-dark m-0">Proyectos y Eventos</h6>
+                            <small class="text-muted">Simposios y planes de desarrollo.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-secondary" onclick="descargarReportePDF('Reporte_Reuniones_Por_Semillero')">
+                    <div class="d-flex align-items-center">
+                        <div class="badge-icon bg-secondary-subtle text-secondary rounded-3"><i class="bi bi-calendar-range-fill fs-5"></i></div>
+                        <div class="ms-3">
+                            <h6 class="fw-bold text-dark m-0">Volumen de Reuniones</h6>
+                            <small class="text-muted">Cantidad de comités por semillero.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <button type="button" id="btnGenerarReporteGeneral" class="d-none" onclick="descargarReportePDF('Reporte_Semilleros_Lineas')"></button>
+    }
+</div>
+
+<script>
+    function descargarReportePDF(targetReport) {
+        // Inyecta el nombre del reporte específico elegido y procesa el submit asíncrono
+        $("#nombreReporte").val(targetReport);
+        $("#formCrystalReport").submit();
+    }
+</script>

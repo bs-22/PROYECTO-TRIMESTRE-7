@@ -8,7 +8,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="~/Content/dashboard.css" rel="stylesheet" />
     <style>
-
         /* Cambiar el fondo del menú a blanco y el texto a oscuro */
         .sidebar {
             background-color: #ffffff !important;
@@ -86,6 +85,11 @@
 
                 <a class="nav-link" href="@Url.Action("ConsultarReuniones", "Lider")">
                     <i class="bi bi-search"></i> <span>Consultar reuniones</span>
+                </a>
+
+                <!-- NUEVO BOTÓN DE REPORTES PARA EL LÍDER -->
+                <a class="nav-link" href="@Url.Action("Reportes", "Lider")">
+                    <i class="bi bi-file-earmark-bar-graph"></i> <span>Reportes</span>
                 </a>
             </nav>
         </div>

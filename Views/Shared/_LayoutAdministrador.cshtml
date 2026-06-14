@@ -81,7 +81,10 @@
                 <i class="bi bi-calendar-event me-3"></i>Eventos
             </a>
 
-            <a href="#" class="nav-btn"><i class="bi bi-file-earmark-bar-graph me-3"></i>Reportes</a>
+            <!-- ENLACE CORREGIDO Y ENRUTADO CON ACTIVACIÓN VISUAL PARA REPORTES -->
+            <a href="@Url.Action("Reportes", "Administrador")" class="nav-btn @(ViewContext.RouteData.Values["action"].ToString() == "Reportes" ? "active" : "")">
+                <i class="bi bi-file-earmark-bar-graph me-3"></i>Reportes
+            </a>
 
             <a href="@Url.Action("Reuniones", "Administrador")" class="nav-btn @(ViewContext.RouteData.Values["action"].ToString() == "Reuniones" ? "active" : "")">
                 <i class="bi bi-camera-video me-3"></i>Reuniones

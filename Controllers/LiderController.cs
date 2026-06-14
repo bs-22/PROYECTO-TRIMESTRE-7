@@ -3,9 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using CrystalDecisions.CrystalReports.Engine; // Obligatorio aquí arriba
+using CrystalDecisions.Shared;
 
 namespace GestionSemillero1.Controllers
 {
@@ -137,8 +140,8 @@ namespace GestionSemillero1.Controllers
             cmd.Parameters.Add(p);
         }
 
-      
-    
+
+
 
         // GET: Lider/GestionarSemillero
         public ActionResult GestionarSemillero(string semilleroFiltro, string lineaFiltro, string fechaFiltro, string seccionCargada, decimal? idSemilleroSeccion4)
@@ -563,7 +566,8 @@ namespace GestionSemillero1.Controllers
             }
 
             // Aplanamiento dinámico definitivo para evitar errores de Binder en la vista Razor
-            ViewBag.EventosResultado = query.ToList().Select(x => {
+            ViewBag.EventosResultado = query.ToList().Select(x =>
+            {
                 dynamic expando = new ExpandoObject();
                 expando.ID_evento = x.ID_evento;
                 expando.nombre_evento = x.nombre_evento;
@@ -579,6 +583,92 @@ namespace GestionSemillero1.Controllers
             return View();
         }
 
+
+        //REPORTE 
+        // 1. GET: Administrador/Reportes
+        public ActionResult Reportes()
+        {
+            using (var db = new DbSemillero()) // REEMPLAZA por tu DbContext real
+            {
+                // Métricas rápidas para las tarjetas informativas de la vista
+                ViewBag.TotalSemilleros = db.semillero.Count();
+                ViewBag.TotalUsuarios = db.Usuarios.Count(); // Ajusta según tu tabla de usuarios
+            }
+            return View();
+        }
+
+        // 2. POST: Administrador/GenerarCrystalReport
+        [HttpPost]
+        public ActionResult GenerarCrystalReport(string nombreReporte)
+        {
+            try
+            {
+                ReportDocument reportDocument = new ReportDocument();
+
+                // Mapeo de la ruta física de tus plantillas .rpt en el servidor
+                string rutaReporte = Path.Combine(Server.MapPath("~/Reports"), nombreReporte + ".rpt");
+
+                if (!System.IO.File.Exists(rutaReporte))
+                {
+                    TempData["Error"] = "El archivo físico " + nombreReporte + ".rpt no se encuentra en la carpeta /Reports.";
+                    return RedirectToAction("Reportes");
+                }
+
+                reportDocument.Load(rutaReporte);
+
+                using (var db = new DbSemillero()) // REEMPLAZA por tu DbContext real
+                {
+                    // Lógica de datos parametrizada según lo solicitado
+                    switch (nombreReporte)
+                    {
+                        case "Reporte_Investigadores_General":
+                            // 1. Reporte de todos los investigadores de todos los semilleros
+                            var investigadores = db.Usuarios.Where(u => u.tipo_usuario == "Investigador").ToList();
+                            reportDocument.SetDataSource(investigadores);
+                            break;
+
+                        case "Reporte_Lideres_General":
+                            // 2. Reporte de todos los líderes instructores
+                            var lideres = db.Usuarios.Where(u => u.tipo_usuario == "Lider").ToList();
+                            reportDocument.SetDataSource(lideres);
+                            break;
+
+                        case "Reporte_Semilleros_Lineas":
+                            // 3. Conteo de semilleros totales y sus líneas de investigación
+                            var semilleros = db.semillero.ToList();
+                            reportDocument.SetDataSource(semilleros);
+                            break;
+
+                        case "Reporte_Proyectos_Eventos":
+                            // 4. Reporte combinado de proyectos y eventos registrados en el sistema
+                            var proyectos = db.Database.SqlQuery<Proyecto>("SELECT * FROM proyecto").ToList();
+                            reportDocument.SetDataSource(proyectos);
+                            break;
+
+                        case "Reporte_Reuniones_Por_Semillero":
+                            // 5. Reporte de cuántas reuniones tiene agendadas cada semillero
+                            var reuniones = db.Database.SqlQuery<Reunion>("SELECT * FROM Reunion").ToList();
+                            reportDocument.SetDataSource(reuniones);
+                            break;
+                    }
+                }
+
+                // Compilación y conversión nativa del reporte de Crystal Reports a PDF
+                Stream stream = reportDocument.ExportToStream(ExportFormatType.PortableDocFormat);
+                stream.Seek(0, SeekOrigin.Begin);
+
+                string nombreArchivoDescarga = nombreReporte + "_" + DateTime.Now.ToString("yyyyMMdd") + ".pdf";
+
+                // Retorna el archivo PDF directo para descarga o visualización limpia
+                return File(stream, "application/pdf", nombreArchivoDescarga);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error al compilar en el motor de Crystal Reports: " + ex.Message;
+                return RedirectToAction("Reportes");
+            }
+        }
+
     }
-    
+
 }

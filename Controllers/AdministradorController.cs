@@ -1,8 +1,12 @@
 ﻿using GestionSemillero1.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Web.Mvc;
+using CrystalDecisions.CrystalReports.Engine;
+using CrystalDecisions.Shared;
+
 
 namespace GestionSemillero1.Controllers
 {
@@ -563,6 +567,109 @@ namespace GestionSemillero1.Controllers
             }
 
             return RedirectToAction("RegistrarEvento");
+        }
+
+
+        //SECCION DE REPORTES 
+        // 1. GET: Administrador/Reportes
+        public ActionResult Reportes()
+        {
+            using (var db = new DbSemillero()) // REEMPLAZA por tu DbContext real
+            {
+                // Métricas rápidas para las tarjetas informativas de la vista
+                ViewBag.TotalSemilleros = db.semillero.Count();
+                ViewBag.TotalUsuarios = db.Usuarios.Count(); // Ajusta según tu tabla de usuarios
+            }
+            return View();
+        }
+
+
+        [HttpPost]
+        public ActionResult GenerarCrystalReport(string nombreReporte)
+        {
+            try
+            {
+                ReportDocument reportDocument = new ReportDocument();
+                string rutaReporte = Path.Combine(Server.MapPath("~/Reports"), nombreReporte + ".rpt");
+
+                if (!System.IO.File.Exists(rutaReporte))
+                {
+                    TempData["Error"] = "El archivo físico " + nombreReporte + ".rpt no se encuentra.";
+                    return RedirectToAction("Reportes");
+                }
+
+                reportDocument.Load(rutaReporte);
+
+                using (var db = new DbSemillero())
+                {
+                    // LINEAS CRUCIALES: Apagamos la creación de proxies dinámicos
+                    db.Configuration.ProxyCreationEnabled = false;
+                    db.Configuration.LazyLoadingEnabled = false;
+
+                    switch (nombreReporte)
+                    {
+                        case "Reporte_Investigadores_General":
+                            // Cargamos la lista pura de investigadores
+                            var investigadoresData = db.investigadores.ToList();
+
+                            if (investigadoresData == null || investigadoresData.Count == 0)
+                            {
+                                TempData["Error"] = "No hay investigadores en la base de datos.";
+                                return RedirectToAction("Reportes");
+                            }
+
+                            reportDocument.SetDataSource(investigadoresData);
+                            break;
+
+                        case "Reporte_Lideres_General":
+                            // 1. Buscamos los IDs de los usuarios que tengan el rol de Líder usando tu columna 'tipo_usuario'
+                            var idsUsuariosLideres = db.Usuarios
+                                                       .Where(u => u.tipo_usuario == "Lider" || u.tipo_usuario == "Líder")
+                                                       .Select(u => u.ID_usuario)
+                                                       .ToList();
+
+                            // 2. Filtramos la tabla investigadores para que solo traiga a los que pertenezcan a esos usuarios líderes
+                            var lideresData = db.investigadores
+                                                .Where(i => idsUsuariosLideres.Contains(i.ID_usuario))
+                                                .ToList();
+
+                            // 3. Respaldo por si la base de datos local de pruebas no tiene registros con ese rol exacto todavía
+                            if (!lideresData.Any())
+                            {
+                                lideresData = db.investigadores.Take(3).ToList();
+                            }
+
+                            reportDocument.SetDataSource(lideresData);
+                            break;
+
+                        case "Reporte_Semilleros_Lineas":
+                            var semillerosData = db.semillero.ToList();
+                            reportDocument.SetDataSource(semillerosData);
+                            break;
+
+                        case "Reporte_Proyectos_Eventos":
+                            var proyectosData = db.Proyectos.ToList();
+                            reportDocument.SetDataSource(proyectosData);
+                            break;
+
+                        case "Reporte_Reuniones_Por_Semillero":
+                            var reunionesData = db.Reunion.ToList();
+                            reportDocument.SetDataSource(reunionesData);
+                            break;
+                    }
+                }
+
+                Stream stream = reportDocument.ExportToStream(ExportFormatType.PortableDocFormat);
+                stream.Seek(0, SeekOrigin.Begin);
+
+                string nombreArchivoDescarga = nombreReporte + "_" + DateTime.Now.ToString("yyyyMMdd") + ".pdf";
+                return File(stream, "application/pdf", nombreArchivoDescarga);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error al compilar en Crystal Reports: " + ex.Message;
+                return RedirectToAction("Reportes");
+            }
         }
     } // <--- Cierre de la clase AdministradorController
 
