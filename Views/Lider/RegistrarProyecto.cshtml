@@ -4,6 +4,16 @@
     string pestañaActiva = ViewBag.PestañaCargada;
 }
 
+<style>
+    /* Forzar el color verde institucional en la pestaña activa */
+    .nav-tabs-custom .nav-link-tab.active {
+        background: #278a5f !important;
+        background-color: #278a5f !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 6px rgba(39, 138, 95, 0.3) !important;
+    }
+</style>
+
 <div class="container-fluid">
 
     @if (TempData["ErrorProyecto"] != null)
@@ -43,7 +53,7 @@
                 <div class="row">
                     <div class="col-md-6 mb-4">
                         <div class="dashboard-card" style="height:auto;">
-                            <div class="card-title"><span class="step-badge">1</span>Identificación del Proyecto</div>
+                            <div class="card-title"><span class="step-badge text-white" style="background-color: #278a5f;">1</span>Identificación del Proyecto</div>
                             <div class="mb-3">
                                 <input type="text" id="p_ID" name="ID_proyecto" class="form-control-custom" value="@ViewBag.NextProyectoID" readonly style="background-color:#f6f9fc;" required />
                             </div>
@@ -57,7 +67,7 @@
                     </div>
                     <div class="col-md-6 mb-4">
                         <div class="dashboard-card" style="height:auto;">
-                            <div class="card-title"><span class="step-badge">2</span>Asignación y Cronograma</div>
+                            <div class="card-title"><span class="step-badge text-white" style="background-color: #278a5f;">2</span>Asignación y Cronograma</div>
                             <div class="mb-3">
                                 <select id="p_Semillero" name="ID_semillero" class="form-control-custom" required>
                                     <option value="">Asociar a un semillero...</option>
@@ -80,26 +90,54 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2 mb-4">
-                    <button type="submit" name="accionCrud" value="agregar" class="btn-submit-gradient" style="width:auto; padding:10px 25px;"><i class="bi bi-plus-circle me-2"></i>Agregar Proyecto</button>
-                    <button type="submit" name="accionCrud" value="actualizar" class="btn-logout" style="background-color:#ffad1f; width:auto; padding:10px 25px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
-                    <button type="submit" name="accionCrud" value="eliminar" class="btn-logout" style="background-color:var(--danger-color); width:auto; padding:10px 25px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
+                    <button type="submit" name="accionCrud" value="agregar" class="btn text-white" style="background-color: #278a5f; width:auto; padding:10px 25px;"><i class="bi bi-plus-circle me-2"></i>Agregar Proyecto</button>
+                    <!-- Colores actualizados aquí -->
+                    <button type="submit" name="accionCrud" value="actualizar" class="btn-logout" style="background-color:#c98d26; color:white; width:auto; padding:10px 25px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
+                    <button type="submit" name="accionCrud" value="eliminar" class="btn-logout" style="background-color:#d42346; color:white; width:auto; padding:10px 25px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
+
+                    <button type="button" id="btnCancelarProyecto" class="btn btn-secondary text-white d-none" style="width:auto; padding:10px 25px;" onclick="limpiarProyecto()">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar Selección
+                    </button>
                 </div>
             }
             <div class="table-responsive-container">
-                <div class="table-header-banner"><i class="bi bi-folder text-white me-2"></i>Proyectos de Investigación Activos</div>
-                <table class="custom-table" id="tablaProyectosRaw">
-                    <thead><tr><th>ID</th><th>Nombre Proyecto</th><th>Línea Enfoque</th><th>Inicio</th><th>Fin</th><th style="display:none;">SemId</th></tr></thead>
+                <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;"><i class="bi bi-folder text-white me-2"></i>Proyectos de Investigación Activos</div>
+                <table class="custom-table table-hover" id="tablaProyectosRaw">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre Proyecto</th>
+                            <th>Línea Enfoque</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th class="text-center">Info</th>
+                            <th style="display:none;">SemId</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         @if (ViewBag.ListaProyectos != null)
                         {
                             foreach (var proj in ViewBag.ListaProyectos)
                             {
-                                <tr>
+                                <tr style="cursor: pointer;" title="Haga clic para editar en el formulario">
                                     <td class="fw-bold id-p-cell">@proj.ID_proyecto</td>
                                     <td style="color:#32325d; font-weight:600;">@proj.nombre_proyecto</td>
                                     <td>@proj.actividad_proyecto</td>
                                     <td>@proj.fecha_inicio_proyecto.ToString("yyyy-MM-dd")</td>
                                     <td>@proj.fecha_fin_proyecto.ToString("yyyy-MM-dd")</td>
+
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
+                                                onclick="verFichaTecnicaProyecto(event, this)"
+                                                data-id="@proj.ID_proyecto"
+                                                data-nombre="@proj.nombre_proyecto"
+                                                data-actividad="@proj.actividad_proyecto"
+                                                data-inicio='@proj.fecha_inicio_proyecto.ToString("dd/MM/yyyy")'
+                                                data-fin='@proj.fecha_fin_proyecto.ToString("dd/MM/yyyy")'>
+                                            <i class="bi bi-exclamation-circle-fill fs-5" title="Ver hoja de detalles del proyecto"></i>
+                                        </button>
+                                    </td>
+
                                     <td style="display:none;" class="sem-p-oculto">@proj.ID_semillero</td>
                                 </tr>
                             }
@@ -115,7 +153,7 @@
             {
                 <input type="hidden" name="tipoSubmit" value="fase" />
                 <div class="dashboard-card mb-4" style="height:auto;">
-                    <div class="card-title"><span class="step-badge">1</span>Estructuración de Etapas (Fases)</div>
+                    <div class="card-title"><span class="step-badge text-white" style="background-color: #278a5f;">1</span>Estructuración de Etapas (Fases)</div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <input type="text" id="f_ID" name="ID_fase_proyecto" class="form-control-custom" value="@ViewBag.NextFaseID" readonly style="background-color:#f6f9fc;" required />
@@ -141,26 +179,49 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2 mb-4">
-                    <button type="submit" name="accionCrud" value="agregar" class="btn-submit-gradient" style="width:auto; padding:10px 25px;"><i class="bi bi-plus-circle me-2"></i>Agregar Fase</button>
-                    <button type="submit" name="accionCrud" value="actualizar" class="btn-logout" style="background-color:#ffad1f; width:auto; padding:10px 25px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
-                    <button type="submit" name="accionCrud" value="eliminar" class="btn-logout" style="background-color:var(--danger-color); width:auto; padding:10px 25px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
+                    <button type="submit" name="accionCrud" value="agregar" class="btn text-white" style="background-color: #278a5f; width:auto; padding:10px 25px;"><i class="bi bi-plus-circle me-2"></i>Agregar Fase</button>
+                    <!-- Colores actualizados aquí -->
+                    <button type="submit" name="accionCrud" value="actualizar" class="btn-logout" style="background-color:#c98d26; color:white; width:auto; padding:10px 25px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
+                    <button type="submit" name="accionCrud" value="eliminar" class="btn-logout" style="background-color:#d42346; color:white; width:auto; padding:10px 25px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
+
+                    <button type="button" id="btnCancelarFase" class="btn btn-secondary text-white d-none" style="width:auto; padding:10px 25px;" onclick="limpiarFase()">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar Selección
+                    </button>
                 </div>
             }
             <div class="table-responsive-container">
-                <div class="table-header-banner" style="background: linear-gradient(87deg, #11cdef 0, #1171ef 100%);"><i class="bi bi-layers-half text-white me-2"></i>Fases Registradas por Proyecto</div>
-                <table class="custom-table" id="tablaFasesRaw">
-                    <thead><tr><th>ID Fase</th><th>Nombre Fase</th><th>Descripción</th><th>Proyecto Padre</th></tr></thead>
+                <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;"><i class="bi bi-layers-half text-white me-2"></i>Fases Registradas por Proyecto</div>
+                <table class="custom-table table-hover" id="tablaFasesRaw">
+                    <thead>
+                        <tr>
+                            <th>ID Fase</th>
+                            <th>Nombre Fase</th>
+                            <th>Descripción</th>
+                            <th>Proyecto Padre</th>
+                            <th class="text-center">Info</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         @if (ViewBag.ListaFases != null)
                         {
-                            // CAMBIO CLAVE: Usamos dynamic para mapear el ExpandoObject del Controlador
                             foreach (dynamic fase in ViewBag.ListaFases)
                             {
-                                <tr>
+                                <tr style="cursor: pointer;" title="Haga clic para editar">
                                     <td class="fw-bold id-f-cell">@fase.ID_fase_proyecto</td>
                                     <td style="color:#32325d; font-weight:600;">@fase.nombre_fase_proyecto</td>
-                                    <td>@fase.descripcion_fase_proyecto</td>
+                                    <td class="text-truncate" style="max-width: 250px;">@fase.descripcion_fase_proyecto</td>
                                     <td>@fase.nombre_proyecto</td>
+
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
+                                                onclick="verFichaTecnicaFase(event, this)"
+                                                data-id="@fase.ID_fase_proyecto"
+                                                data-nombre="@fase.nombre_fase_proyecto"
+                                                data-descripcion="@fase.descripcion_fase_proyecto"
+                                                data-proyecto="@fase.nombre_proyecto">
+                                            <i class="bi bi-exclamation-circle-fill fs-5" title="Ver hoja de detalles de la fase"></i>
+                                        </button>
+                                    </td>
                                 </tr>
                             }
                         }
@@ -177,7 +238,7 @@
                 <div class="row">
                     <div class="col-md-6 mb-4">
                         <div class="dashboard-card" style="height:auto;">
-                            <div class="card-title"><span class="step-badge">1</span>Definición de Tareas</div>
+                            <div class="card-title"><span class="step-badge text-white" style="background-color: #278a5f;">1</span>Definición de Tareas</div>
                             <div class="mb-3">
                                 <input type="text" id="a_ID" name="ID_activida_proyecto" class="form-control-custom" value="@ViewBag.NextActividadID" readonly style="background-color:#f6f9fc;" required />
                             </div>
@@ -203,7 +264,7 @@
                     </div>
                     <div class="col-md-6 mb-4">
                         <div class="dashboard-card" style="height:auto;">
-                            <div class="card-title"><span class="step-badge">2</span>Vigencia Operativa</div>
+                            <div class="card-title"><span class="step-badge text-white" style="background-color: #278a5f;">2</span>Vigencia Operativa</div>
                             <div class="mb-3" style="position:relative;">
                                 <label class="form-label small fw-bold text-muted">Fecha de Apertura</label>
                                 <input type="date" id="a_FInicio" name="fecha_inicio_actividad_proyecto" class="form-control-custom" required />
@@ -216,28 +277,60 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2 mb-4">
-                    <button type="submit" name="accionCrud" value="agregar" class="btn-submit-gradient" style="width:auto; padding:10px 25px;"><i class="bi bi-plus-circle me-2"></i>Agregar Actividad</button>
-                    <button type="submit" name="accionCrud" value="actualizar" class="btn-logout" style="background-color:#ffad1f; width:auto; padding:10px 25px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
-                    <button type="submit" name="accionCrud" value="eliminar" class="btn-logout" style="background-color:var(--danger-color); width:auto; padding:10px 25px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
+                    <button type="submit" name="accionCrud" value="agregar" class="btn text-white" style="background-color: #278a5f; width:auto; padding:10px 25px;"><i class="bi bi-plus-circle me-2"></i>Agregar Actividad</button>
+                    <!-- Colores actualizados aquí -->
+                    <button type="submit" name="accionCrud" value="actualizar" class="btn-logout" style="background-color:#c98d26; color:white; width:auto; padding:10px 25px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
+                    <button type="submit" name="accionCrud" value="eliminar" class="btn-logout" style="background-color:#d42346; color:white; width:auto; padding:10px 25px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
+
+                    <button type="button" id="btnCancelarActividad" class="btn btn-secondary text-white d-none" style="width:auto; padding:10px 25px;" onclick="limpiarActividad()">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar Selección
+                    </button>
                 </div>
             }
             <div class="table-responsive-container">
-                <div class="table-header-banner" style="background: linear-gradient(87deg, #5e72e4 0, #825ee4 100%);"><i class="bi bi-check2-square text-white me-2"></i>Cronograma de Actividades Generales</div>
-                <table class="custom-table" id="tablaActividadesRaw">
-                    <thead><tr><th>ID Act.</th><th>Nombre Actividad</th><th>Detalle</th><th>Inicio</th><th>Fin</th><th>Fase Vinculada</th></tr></thead>
+                <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;"><i class="bi bi-check2-square text-white me-2"></i>Cronograma de Actividades Generales</div>
+                <table class="custom-table table-hover" id="tablaActividadesRaw">
+                    <thead>
+                        <tr>
+                            <th>ID Act.</th>
+                            <th>Nombre Actividad</th>
+                            <th>Detalle</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th>Fase Vinculada</th>
+                            <th class="text-center">Info</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         @if (ViewBag.ListaActividades != null)
                         {
-                            // CAMBIO CLAVE: Usamos dynamic para mapear el ExpandoObject del Controlador
                             foreach (dynamic act in ViewBag.ListaActividades)
                             {
-                                <tr>
+                                string estadoAct = "En curso";
+                                if (act.fecha_fin_actividad_proyecto.Date < DateTime.Today) { estadoAct = "Finalizada"; }
+                                else if (act.fecha_inicio_actividad_proyecto.Date > DateTime.Today) { estadoAct = "Programada"; }
+
+                                <tr style="cursor: pointer;" title="Haga clic para editar">
                                     <td class="fw-bold id-a-cell">@act.ID_activida_proyecto</td>
                                     <td style="color:#32325d; font-weight:600;">@act.nombre_actividad_proyecto</td>
-                                    <td>@act.descripcion_actividad_proyecto</td>
+                                    <td class="text-truncate" style="max-width: 200px;">@act.descripcion_actividad_proyecto</td>
                                     <td><span class="badge-time">@act.fecha_inicio_actividad_proyecto.ToString("dd/MM/yyyy")</span></td>
                                     <td><span class="badge-time" style="background-color:#fff3cd; color:#856404;">@act.fecha_fin_actividad_proyecto.ToString("dd/MM/yyyy")</span></td>
                                     <td>@act.nombre_fase_proyecto</td>
+
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
+                                                onclick="verFichaTecnicaActividad(event, this)"
+                                                data-id="@act.ID_activida_proyecto"
+                                                data-nombre="@act.nombre_actividad_proyecto"
+                                                data-descripcion="@act.descripcion_actividad_proyecto"
+                                                data-inicio='@act.fecha_inicio_actividad_proyecto.ToString("dd/MM/yyyy")'
+                                                data-fin='@act.fecha_fin_actividad_proyecto.ToString("dd/MM/yyyy")'
+                                                data-fase="@act.nombre_fase_proyecto"
+                                                data-estado="@estadoAct">
+                                            <i class="bi bi-exclamation-circle-fill fs-5" title="Ver hoja de detalles de la actividad"></i>
+                                        </button>
+                                    </td>
                                 </tr>
                             }
                         }
@@ -249,9 +342,173 @@
     </div>
 </div>
 
+<!-- ================= MINIVENTANAS (MODALS) ================= -->
+<!-- Modal para Proyectos -->
+<div class="modal fade" id="modalDetallesProyecto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+            <div class="modal-header text-white" style="background-color: #278a5f; border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                <h5 class="modal-title fw-bold"><i class="bi bi-folder-fill me-2"></i>Ficha Técnica del Proyecto</h5>
+                <button type="button" class="border-0 bg-transparent fs-4 text-white" onclick="cerrarModalProyecto()" style="outline: none;">&times;</button>
+            </div>
+            <div class="modal-body p-4 border-0 bg-white">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">CÓDIGO DE PROYECTO:</small>
+                        <span id="detProyId" class="fw-bold text-dark fs-5">#0000</span>
+                    </div>
+                    <div class="col-6 text-end mb-3">
+                        <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">ESTADO ACTUAL:</small>
+                        <span class="badge text-white px-2 py-1 small fw-semibold" style="background-color: #278a5f;">Activo</span>
+                    </div>
+                    <div class="col-12"><hr class="mt-0 mb-3" /></div>
+                    <div class="col-12 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-card-heading text-secondary me-2"></i><strong>Nombre del Proyecto:</strong></p>
+                        <span id="detProyNombre" class="text-dark fw-semibold">Sin nombre</span>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-calendar-play text-secondary me-2"></i><strong>Fecha Inicio:</strong></p>
+                        <span id="detProyInicio" class="text-secondary">--/--/----</span>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-calendar-x text-secondary me-2"></i><strong>Fecha Fin:</strong></p>
+                        <span id="detProyFin" class="text-secondary">--/--/----</span>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <p class="mb-1 small"><i class="bi bi-bullseye text-secondary me-2"></i><strong>Línea de Enfoque / Actividad:</strong></p>
+                        <div class="p-3 bg-light rounded text-secondary small text-start" id="detProyActividad" style="white-space: pre-wrap; max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3 bg-light" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;">
+                <button type="button" class="btn btn-secondary btn-sm px-4" onclick="cerrarModalProyecto()">Cerrar Ventana</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Fases -->
+<div class="modal fade" id="modalDetallesFase" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+            <div class="modal-header text-white" style="background-color: #278a5f; border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                <h5 class="modal-title fw-bold"><i class="bi bi-layers-half me-2"></i>Detalles de la Fase</h5>
+                <button type="button" class="border-0 bg-transparent fs-4 text-white" onclick="cerrarModalFase()" style="outline: none;">&times;</button>
+            </div>
+            <div class="modal-body p-4 border-0 bg-white">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">CÓDIGO DE FASE:</small>
+                        <span id="detFaseId" class="fw-bold text-dark fs-5">#0000</span>
+                    </div>
+                    <div class="col-6 text-end mb-3">
+                        <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">ESTADO ACTUAL:</small>
+                        <span class="badge text-white px-2 py-1 small fw-semibold" style="background-color: #278a5f;">Asignada</span>
+                    </div>
+                    <div class="col-12"><hr class="mt-0 mb-3" /></div>
+                    <div class="col-12 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-card-heading text-secondary me-2"></i><strong>Nombre de la Fase:</strong></p>
+                        <span id="detFaseNombre" class="text-dark fw-semibold">Sin nombre</span>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-diagram-3-fill text-secondary me-2"></i><strong>Proyecto Padre:</strong></p>
+                        <span id="detFaseProy" class="text-secondary">--</span>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <p class="mb-1 small"><i class="bi bi-chat-right-text-fill text-secondary me-2"></i><strong>Descripción de la Fase:</strong></p>
+                        <div class="p-3 bg-light rounded text-secondary small text-start" id="detFaseDesc" style="white-space: pre-wrap; max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3 bg-light" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;">
+                <button type="button" class="btn btn-secondary btn-sm px-4" onclick="cerrarModalFase()">Cerrar Ventana</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Actividades -->
+<div class="modal fade" id="modalDetallesActividad" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+            <div class="modal-header text-white" style="background-color: #278a5f; border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                <h5 class="modal-title fw-bold"><i class="bi bi-check2-square me-2"></i>Detalles de la Actividad</h5>
+                <button type="button" class="border-0 bg-transparent fs-4 text-white" onclick="cerrarModalActividad()" style="outline: none;">&times;</button>
+            </div>
+            <div class="modal-body p-4 border-0 bg-white">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">CÓDIGO DE ACTIVIDAD:</small>
+                        <span id="detActId" class="fw-bold text-dark fs-5">#0000</span>
+                    </div>
+                    <div class="col-6 text-end mb-3">
+                        <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">ESTADO ACTUAL:</small>
+                        <span id="detActEstado" class="badge text-white px-2 py-1 small fw-semibold" style="background-color: #278a5f;">--</span>
+                    </div>
+                    <div class="col-12"><hr class="mt-0 mb-3" /></div>
+                    <div class="col-12 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-card-heading text-secondary me-2"></i><strong>Nombre de la Actividad:</strong></p>
+                        <span id="detActNombre" class="text-dark fw-semibold">Sin nombre</span>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-diagram-2 text-secondary me-2"></i><strong>Fase Vinculada:</strong></p>
+                        <span id="detActFase" class="text-secondary">--</span>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-calendar-play text-secondary me-2"></i><strong>Fecha Inicio:</strong></p>
+                        <span id="detActInicio" class="text-secondary">--/--/----</span>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-calendar-x text-secondary me-2"></i><strong>Fecha Fin:</strong></p>
+                        <span id="detActFin" class="text-secondary">--/--/----</span>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <p class="mb-1 small"><i class="bi bi-tools text-secondary me-2"></i><strong>Detalle Técnico:</strong></p>
+                        <div class="p-3 bg-light rounded text-secondary small text-start" id="detActDesc" style="white-space: pre-wrap; max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3 bg-light" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;">
+                <button type="button" class="btn btn-secondary btn-sm px-4" onclick="cerrarModalActividad()">Cerrar Ventana</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     function navegarPestañaLocal(pestaña) {
         window.location.href = `@Url.Action("RegistrarProyecto", "Lider")?pestañaActiva=` + pestaña;
+    }
+
+    // ==========================================
+    // LÓGICA DE LIMPIEZA DE FORMULARIOS (CANCELAR)
+    // ==========================================
+    function limpiarProyecto() {
+        document.getElementById("p_ID").value = "@ViewBag.NextProyectoID";
+        document.getElementById("p_Nombre").value = "";
+        document.getElementById("p_Actividad").value = "";
+        document.getElementById("p_FInicio").value = "";
+        document.getElementById("p_FFin").value = "";
+        document.getElementById("p_Semillero").value = "";
+        document.getElementById("btnCancelarProyecto").classList.add("d-none");
+    }
+
+    function limpiarFase() {
+        document.getElementById("f_ID").value = "@ViewBag.NextFaseID";
+        document.getElementById("f_Proyecto").value = "";
+        document.getElementById("f_Nombre").value = "";
+        document.getElementById("f_Descripcion").value = "";
+        document.getElementById("btnCancelarFase").classList.add("d-none");
+    }
+
+    function limpiarActividad() {
+        document.getElementById("a_ID").value = "@ViewBag.NextActividadID";
+        document.getElementById("a_Fase").value = "";
+        document.getElementById("a_Nombre").value = "";
+        document.getElementById("a_Descripcion").value = "";
+        document.getElementById("a_FInicio").value = "";
+        document.getElementById("a_FFin").value = "";
+        document.getElementById("btnCancelarActividad").classList.add("d-none");
     }
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -265,6 +522,9 @@
                     document.getElementById("p_FInicio").value = this.cells[3].innerText.trim();
                     document.getElementById("p_FFin").value = this.cells[4].innerText.trim();
                     document.getElementById("p_Semillero").value = this.querySelector(".sem-p-oculto").innerText.trim();
+
+                    document.getElementById("btnCancelarProyecto").classList.remove("d-none");
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
             });
         }
@@ -284,6 +544,9 @@
                             combo.selectedIndex = i; break;
                         }
                     }
+
+                    document.getElementById("btnCancelarFase").classList.remove("d-none");
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
             });
         }
@@ -310,8 +573,92 @@
                             combo.selectedIndex = i; break;
                         }
                     }
+
+                    document.getElementById("btnCancelarActividad").classList.remove("d-none");
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
             });
         }
     });
+
+    // ==========================================
+    // LÓGICA DE LAS MINIVENTANAS (MODALS)
+    // ==========================================
+
+    /* 1. Modal Proyecto */
+    function verFichaTecnicaProyecto(e, btn) {
+        e.stopPropagation();
+        const data = btn.dataset;
+        document.getElementById("detProyId").innerText = "#" + data.id;
+        document.getElementById("detProyNombre").innerText = data.nombre;
+        document.getElementById("detProyActividad").innerText = data.actividad;
+        document.getElementById("detProyInicio").innerText = data.inicio;
+        document.getElementById("detProyFin").innerText = data.fin;
+
+        const modal = document.getElementById("modalDetallesProyecto");
+        modal.style.display = "block";
+        modal.style.backgroundColor = "rgba(0,0,0,0.5)";
+        setTimeout(() => { modal.classList.add("show"); }, 10);
+        document.body.style.overflow = "hidden";
+    }
+    function cerrarModalProyecto() {
+        const modal = document.getElementById("modalDetallesProyecto");
+        modal.classList.remove("show");
+        setTimeout(() => { modal.style.display = "none"; document.body.style.overflow = "auto"; }, 200);
+    }
+
+    /* 2. Modal Fase */
+    function verFichaTecnicaFase(e, btn) {
+        e.stopPropagation();
+        const data = btn.dataset;
+        document.getElementById("detFaseId").innerText = "#" + data.id;
+        document.getElementById("detFaseNombre").innerText = data.nombre;
+        document.getElementById("detFaseDesc").innerText = data.descripcion;
+        document.getElementById("detFaseProy").innerText = data.proyecto;
+
+        const modal = document.getElementById("modalDetallesFase");
+        modal.style.display = "block";
+        modal.style.backgroundColor = "rgba(0,0,0,0.5)";
+        setTimeout(() => { modal.classList.add("show"); }, 10);
+        document.body.style.overflow = "hidden";
+    }
+    function cerrarModalFase() {
+        const modal = document.getElementById("modalDetallesFase");
+        modal.classList.remove("show");
+        setTimeout(() => { modal.style.display = "none"; document.body.style.overflow = "auto"; }, 200);
+    }
+
+    /* 3. Modal Actividad */
+    function verFichaTecnicaActividad(e, btn) {
+        e.stopPropagation();
+        const data = btn.dataset;
+        document.getElementById("detActId").innerText = "#" + data.id;
+        document.getElementById("detActNombre").innerText = data.nombre;
+        document.getElementById("detActDesc").innerText = data.descripcion;
+        document.getElementById("detActFase").innerText = data.fase;
+        document.getElementById("detActInicio").innerText = data.inicio;
+        document.getElementById("detActFin").innerText = data.fin;
+
+        const badge = document.getElementById("detActEstado");
+        badge.innerText = data.estado;
+        if (data.estado.toLowerCase() === "finalizada") {
+            badge.className = "badge bg-danger text-white px-2 py-1 small fw-semibold";
+        } else if (data.estado.toLowerCase() === "en curso") {
+            badge.className = "badge text-white px-2 py-1 small fw-semibold";
+            badge.style.backgroundColor = "#278a5f";
+        } else {
+            badge.className = "badge bg-warning text-dark px-2 py-1 small fw-semibold";
+        }
+
+        const modal = document.getElementById("modalDetallesActividad");
+        modal.style.display = "block";
+        modal.style.backgroundColor = "rgba(0,0,0,0.5)";
+        setTimeout(() => { modal.classList.add("show"); }, 10);
+        document.body.style.overflow = "hidden";
+    }
+    function cerrarModalActividad() {
+        const modal = document.getElementById("modalDetallesActividad");
+        modal.classList.remove("show");
+        setTimeout(() => { modal.style.display = "none"; document.body.style.overflow = "auto"; }, 200);
+    }
 </script>

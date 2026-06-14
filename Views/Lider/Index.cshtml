@@ -2,75 +2,397 @@
 @{
     ViewBag.Title = "Gestionar Reuniones";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    // Recuperamos la lista de reuniones asignadas que enviamos desde el controlador
+    var listaReuniones = ViewBag.ReunionesSemillero as List<GestionSemillero1.Models.Reunion> ?? new List<GestionSemillero1.Models.Reunion>();
 }
+
+<style>
+    .table-header-banner {
+        padding: 15px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+    }
+</style>
+
+<div class="mb-4 mt-2">
+    <h3 class="fw-bold text-dark">
+        <i class="bi bi-calendar2-week me-2" style="color: #278a5f;"></i>Módulo de Programación y Gestión de Reuniones
+    </h3>
+    <p class="text-muted small">Agende nuevos comités de investigación, controle las agendas grupales y edite o elimine actas existentes.</p>
+</div>
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success">🎉 @TempData["Success"]</div>
+    <div class="alert alert-success py-2 fw-semibold mb-3">🎉 @TempData["Success"]</div>
 }
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger">❌ @TempData["Error"]</div>
+    <div class="alert alert-danger py-2 fw-semibold mb-3">❌ @TempData["Error"]</div>
 }
 
-<form action="@Url.Action("AsignarReunion", "Lider")" method="POST" id="formReunion">
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="dashboard-card">
-                <h5>1. Fecha:</h5>
-                <input type="date" name="fecha_reunion" id="fecha_reunion" class="form-control" required />
-            </div>
-        </div>
-        <div class="col-md-4 mb-4">
-            <div class="dashboard-card">
-                <h5>2. Lugar / Enlace:</h5>
-                <input type="text" name="lugar_reunion" class="form-control" required />
-            </div>
-        </div>
-        <div class="col-md-4 mb-4">
-            <div class="dashboard-card">
-                <h5>3. Hora Inicio:</h5>
-                <input type="time" name="hora_reunion" id="hora_reunion" class="form-control" required />
-            </div>
-        </div>
+<div class="card shadow-sm p-4 bg-white mb-4" style="border-radius: 12px;">
+    <form action="@Url.Action("ProcesarReunion", "Lider")" method="POST" id="formReunion">
 
-        <div class="col-md-4 mb-4">
-            <div class="dashboard-card">
-                <h5 class="4. Hora Finalización:">6. Hora de finalización:</h5>
-                <input type="time" name="hora_fin_reunion" class="form-control" required />
-            </div>
-        </div>
+        <input type="hidden" name="ID_reunion" id="ID_reunion" value="" />
 
-        <div class="col-md-4 mb-4">
-            <div class="dashboard-card">
-                <h5>5. Participantes:</h5>
-                <div style="max-height: 200px; overflow-y: auto;">
-                    @foreach (var inv in Model)
-                    {
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="investigadoresSeleccionados" value="@inv.ID_investigador">
-                            <label>@inv.nombre_investigador @inv.apellido_investigador</label>
-                        </div>
-                    }
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="dashboard-card">
+                    <h5>1. Fecha:</h5>
+                    <input type="date" name="fecha_reunion" id="fecha_reunion" class="form-control" required />
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="dashboard-card">
+                    <h5>2. Lugar / Enlace:</h5>
+                    <input type="text" name="lugar_reunion" id="lugar_reunion" class="form-control" list="lugaresSugeridos" placeholder="Seleccione o escriba el lugar" required autocomplete="off" />
+
+                    <datalist id="lugaresSugeridos">
+                        <option value="Salon30"></option>
+                        <option value="meet"></option>
+                        <option value="Salon1"></option>
+                        <option value="Sala de Juntas B"></option>
+                        <option value="ZOOM"></option>
+                        <option value="ADSO"></option>
+                    </datalist>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="dashboard-card">
+                    <h5>3. Hora Inicio:</h5>
+                    <input type="time" name="hora_reunion" id="hora_reunion" class="form-control" required />
+                    <small class="text-muted block mt-1" style="font-size:0.75rem;">Formato de 24 Horas (Rango: 06:00 a 18:00)</small>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="dashboard-card">
+                    <h5>4. Hora de finalización:</h5>
+                    <input type="time" name="hora_fin_reunion" id="hora_fin_reunion" class="form-control" required />
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="dashboard-card">
+                    <h5>5. Participantes:</h5>
+                    <div class="border rounded p-2 bg-light" style="max-height: 125px; overflow-y: auto;">
+                        @foreach (var inv in Model)
+                        {
+                            <div class="checkbox-item mb-1">
+                                <input type="checkbox" name="investigadoresSeleccionados" value="@inv.ID_investigador" id="inv_@inv.ID_investigador" class="chk-part">
+                                <label for="inv_@inv.ID_investigador" class="ms-1 cursor-pointer">@inv.nombre_investigador @inv.apellido_investigador</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="dashboard-card">
+                    <h5>6. Asunto / Descripción:</h5>
+                    <textarea name="descripcion_reunion" id="descripcion_reunion" class="form-control" rows="4" placeholder="Detalles de la agenda..." required></textarea>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-4">
-            <div class="dashboard-card">
-                <h5>5. Asunto:</h5>
-                <textarea name="descripcion_reunion" class="form-control" rows="5" required></textarea>
+
+        <div class="d-flex justify-content-end gap-2 mt-2">
+            <button type="button" id="btnCancelar" class="btn btn-secondary text-white d-none px-4" onclick="limpiarFormulario()">
+                <i class="bi bi-x-circle me-2"></i>Cancelar Selección
+            </button>
+            <button type="submit" id="btnEliminar" class="btn text-white d-none px-4" style="background-color: #d42346;" onclick="redirigirAEliminar(event)">
+                <i class="bi bi-trash me-2"></i>Eliminar Reunión
+            </button>
+            <button type="submit" id="btnSubmit" class="btn text-white px-4" style="background-color: #278a5f;">
+                <i class="bi bi-plus-circle me-2"></i>Registrar Reunión
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="card shadow-sm bg-white" style="border-radius: 12px; padding: 0; overflow: hidden;">
+    <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%);">
+        <i class="bi bi-calendar-check text-white me-2"></i>Reuniones Programadas del Semillero
+    </div>
+    <div class="table-responsive p-3">
+        <table class="table table-hover table-striped align-middle text-center small mb-0">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Lugar / Enlace</th>
+                    <th>Hora Inicio</th>
+                    <th>Hora Fin</th>
+                    <th>Info</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!listaReuniones.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-muted py-3">No hay reuniones programadas en este semillero.</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var r in listaReuniones)
+                    {
+                        string rawInicio = r.hora_reunion != null ? r.hora_reunion.ToString() : "00:00";
+                        string rawFin = r.hora_fin_reunion != null ? r.hora_fin_reunion.ToString() : "00:00";
+
+                        string hIni24 = rawInicio.Length > 5 ? rawInicio.Substring(0, 5) : rawInicio;
+                        string hFin24 = rawFin.Length > 5 ? rawFin.Substring(0, 5) : rawFin;
+                        string fIso = r.fecha_reunion.ToString("yyyy-MM-dd");
+
+                        string hIniVisual = hIni24;
+                        string hFinVisual = hFin24;
+
+                        if (DateTime.TryParse(hIni24, out DateTime dtIni))
+                        {
+                            hIniVisual = dtIni.ToString("HH:mm tt", System.Globalization.CultureInfo.InvariantCulture);
+                        }
+                        if (DateTime.TryParse(hFin24, out DateTime dtFin))
+                        {
+                            hFinVisual = dtFin.ToString("HH:mm tt", System.Globalization.CultureInfo.InvariantCulture);
+                        }
+
+                        string estado = r.estado_reunion ?? "";
+                        if (r.fecha_reunion.Date < DateTime.Today)
+                        {
+                            estado = "Finalizada";
+                        }
+                        else if (r.fecha_reunion.Date > DateTime.Today)
+                        {
+                            estado = "Programada";
+                        }
+                        else
+                        {
+                            if (string.IsNullOrEmpty(estado) || estado.Equals("Finalizada", StringComparison.OrdinalIgnoreCase))
+                            {
+                                estado = "En curso";
+                            }
+                        }
+
+                        string idsParticipantes = "";
+                        if (r.AsistenciaReunion != null && r.AsistenciaReunion.Any())
+                        {
+                            idsParticipantes = string.Join(",", r.AsistenciaReunion.Select(a => a.ID_usuario));
+                        }
+
+                        <tr onclick="cargarReunionFormulario(this)"
+                            data-id="@r.ID_reunion"
+                            data-fecha="@fIso"
+                            data-lugar="@r.lugar_reunion"
+                            data-horaini="@hIni24"
+                            data-horafin="@hFin24"
+                            data-descripcion="@r.descripcion_reunion"
+                            data-participantes="@idsParticipantes"
+                            style="cursor: pointer;"
+                            title="Haga clic para editar en el formulario superior">
+
+                            <td><strong>@r.ID_reunion</strong></td>
+                            <td class="fw-semibold">@r.fecha_reunion.ToString("dd/MM/yyyy")</td>
+
+                            <td class="text-dark fw-semibold">@r.lugar_reunion</td>
+
+                            <td>@hIniVisual</td>
+                            <td>@hFinVisual</td>
+
+                            <td>
+                                <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
+                                        onclick="verFichaTecnicaReunion(event, this)"
+                                        data-id="@r.ID_reunion"
+                                        data-fecha="@r.fecha_reunion.ToString("dd/MM/yyyy")"
+                                        data-lugar="@r.lugar_reunion"
+                                        data-horario="@hIniVisual - @hFinVisual"
+                                        data-estado="@estado"
+                                        data-asunto="@r.descripcion_reunion">
+                                    <i class="bi bi-exclamation-circle-fill fs-5" title="Ver hoja de detalles de la reunión"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDetallesReunion" tabindex="-1" aria-labelledby="modalDetallesReunionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+            <div class="modal-header text-white" style="background-color: #278a5f; border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                <h5 class="modal-title fw-bold" id="modalDetallesReunionLabel">
+                    <i class="bi bi-calendar2-week me-2"></i>Ficha de Control del Comité
+                </h5>
+                <button type="button" class="border-0 bg-transparent fs-4 text-white" onclick="cerrarModalManual()" style="outline: none;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4 border-0 bg-white">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">CÓDIGO DE ACTA:</small>
+                        <span id="detId" class="fw-bold text-dark fs-5">#0000</span>
+                    </div>
+                    <div class="col-6 text-end mb-3">
+                        <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">ESTADO ACTUAL:</small>
+                        <span id="detEstado" class="badge text-white px-2 py-1 small fw-semibold" style="background-color: #278a5f;">Programada</span>
+                    </div>
+                    <div class="col-12"><hr class="mt-0 mb-3" /></div>
+                    <div class="col-6 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-calendar3 text-secondary me-2"></i><strong>Fecha:</strong></p>
+                        <span id="detFecha" class="text-secondary">--/--/----</span>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-clock text-secondary me-2"></i><strong>Horario Absoluto:</strong></p>
+                        <span id="detHorario" class="text-secondary">00:00 - 00:00</span>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-geo-alt-fill text-secondary me-2"></i><strong>Lugar Asignado / Link:</strong></p>
+                        <span id="detLugar" class="text-dark fw-semibold">Ninguno</span>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <p class="mb-1 small"><i class="bi bi-chat-right-text-fill text-secondary me-2"></i><strong>Asunto Completo / Descripción de Agenda:</strong></p>
+                        <div class="p-3 bg-light rounded text-secondary small text-start" id="detAsunto" style="white-space: pre-wrap; max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6;">
+                            Sin descripción detallada.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3 bg-light" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;">
+                <button type="button" class="btn btn-secondary btn-sm px-4" onclick="cerrarModalManual()">Cerrar Ventana</button>
             </div>
         </div>
-        <div class="col-md-4 mb-4 d-flex align-items-end">
-            <button type="submit" class="btn btn-success w-100">Registrar Reunión</button>
-        </div>
     </div>
-</form>
+</div>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const inputFecha = document.getElementById("fecha_reunion");
         const hoy = new Date().toISOString().split('T')[0];
         inputFecha.setAttribute("min", hoy);
+
+        const form = document.getElementById("formReunion");
+        form.addEventListener("submit", function (e) {
+            if (form.action.includes("EliminarReunion")) return true;
+
+            const hInicio = document.getElementById("hora_reunion").value;
+            const hFin = document.getElementById("hora_fin_reunion").value;
+
+            if (hInicio < "06:00" || hInicio > "18:00" || hFin < "06:00" || hFin > "18:00") {
+                alert("El horario de la reunión está fuera de los límites permitidos. El rango institucional es únicamente de 06:00 a 18:00 (24h).");
+                e.preventDefault();
+                return false;
+            }
+
+            if (hInicio >= hFin) {
+                alert("Conflicto de Tiempos: La hora de finalización debe ser posterior a la hora de inicio.");
+                e.preventDefault();
+                return false;
+            }
+        });
     });
+
+    function cargarReunionFormulario(row) {
+        const data = row.dataset;
+
+        document.getElementById("ID_reunion").value = data.id;
+        document.getElementById("fecha_reunion").value = data.fecha;
+        document.getElementById("lugar_reunion").value = data.lugar;
+        document.getElementById("hora_reunion").value = data.horaini;
+        document.getElementById("hora_fin_reunion").value = data.horafin;
+        document.getElementById("descripcion_reunion").value = data.descripcion;
+
+        // Cambiando estilos dinámicos del botón submit al seleccionar
+        const btnSubmit = document.getElementById("btnSubmit");
+        btnSubmit.innerHTML = "<i class='bi bi-arrow-clockwise me-2'></i>Modificar Reunión";
+        btnSubmit.style.backgroundColor = "#c98d26"; // Color Mostaza/Dorado
+
+        document.getElementById("btnCancelar").classList.remove("d-none");
+        document.getElementById("btnEliminar").classList.remove("d-none");
+
+        document.querySelectorAll('.chk-part').forEach(cb => cb.checked = false);
+
+        if (data.participantes && data.participantes.trim() !== "") {
+            const ids = data.participantes.split(',');
+            ids.forEach(id => {
+                const checkbox = document.getElementById("inv_" + id.trim());
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function limpiarFormulario() {
+        document.getElementById("formReunion").reset();
+        document.getElementById("ID_reunion").value = "";
+
+        // Regresando el botón a su estado y color original
+        const btnSubmit = document.getElementById("btnSubmit");
+        btnSubmit.innerHTML = "<i class='bi bi-plus-circle me-2'></i>Registrar Reunión";
+        btnSubmit.style.backgroundColor = "#278a5f";
+
+        document.getElementById("btnCancelar").classList.add("d-none");
+        document.getElementById("btnEliminar").classList.add("d-none");
+        document.getElementById("formReunion").action = "@Url.Action("ProcesarReunion", "Lider")";
+    }
+
+    function redirigirAEliminar(event) {
+        if (confirm(" ¿Está completamente seguro de que desea eliminar de forma permanente esta reunión del calendario del semillero?")) {
+            const form = document.getElementById("formReunion");
+            form.action = "@Url.Action("EliminarReunion", "Lider")";
+        } else {
+            event.preventDefault();
+        }
+    }
+
+    function verFichaTecnicaReunion(e, btn) {
+        e.stopPropagation();
+
+        const data = btn.dataset;
+
+        document.getElementById("detId").innerText = "#" + data.id;
+        document.getElementById("detFecha").innerText = data.fecha;
+        document.getElementById("detLugar").innerText = data.lugar;
+        document.getElementById("detHorario").innerText = data.horario;
+        document.getElementById("detEstado").innerText = data.estado;
+        document.getElementById("detAsunto").innerText = data.asunto;
+
+        const badge = document.getElementById("detEstado");
+        if (data.estado.toLowerCase() === "finalizada") {
+            badge.className = "badge bg-danger text-white px-2 py-1 small fw-semibold";
+        } else if (data.estado.toLowerCase() === "en curso" || data.estado.toLowerCase() === "iniciada") {
+            badge.className = "badge bg-info text-white px-2 py-1 small fw-semibold";
+        } else {
+            badge.className = "badge text-white px-2 py-1 small fw-semibold";
+            badge.style.backgroundColor = "#278a5f"; // Color verde institucional para Programada
+        }
+
+        const modal = document.getElementById("modalDetallesReunion");
+        modal.style.display = "block";
+        modal.style.backgroundColor = "rgba(0,0,0,0.5)";
+
+        setTimeout(() => {
+            modal.classList.add("show");
+        }, 10);
+
+        document.body.style.overflow = "hidden";
+    }
+
+    function cerrarModalManual() {
+        const modal = document.getElementById("modalDetallesReunion");
+        modal.classList.remove("show");
+
+        setTimeout(() => {
+            modal.style.display = "none";
+            document.body.style.overflow = "auto";
+        }, 200);
+    }
 </script>

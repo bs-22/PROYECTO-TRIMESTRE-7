@@ -1,23 +1,37 @@
 ﻿@model List<GestionSemillero1.Models.Reunion>
 @{
     ViewBag.Title = "Mis Reuniones Asignadas";
-    Layout = "~/Views/Shared/_LayoutInvestigador.cshtml"; // Asegúrate de que este sea el nombre de tu layout de investigador
+    Layout = "~/Views/Shared/_LayoutInvestigador.cshtml";
 }
 
 <div class="container-fluid" style="padding: 20px;">
     <h2>Consultar Reuniones Asignadas</h2>
     <p class="text-muted">A continuación se muestran las reuniones personalizadas programadas por tu Líder:</p>
 
-    @using (Html.BeginForm("Index", "Investigador", FormMethod.Get, new { @class = "form-inline", style = "margin-bottom: 20px;" }))
+    @* 🌟 CORRECCIÓN: Se agregó id = "filterForm" al formulario *@
+    @using (Html.BeginForm("Index", "Investigador", FormMethod.Get, new { id = "filterForm", @class = "form-inline", style = "margin-bottom: 20px;" }))
     {
-        <div class="d-flex gap-2 align-items-center mb-3">
-            <select name="criterio" class="form-control" style="width: 200px;">
-                <option value="ID">Filtrar por ID</option>
-                <option value="Fecha">Filtrar por Fecha</option>
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+
+            <select name="criterio" id="tipoFiltro" class="form-select" style="width: 200px;">
+                <option value="">Filtrar por...</option>
+                <option value="ID" @(Request["criterio"] == "ID" ? "selected" : "")>Filtrar por ID</option>
+                <option value="Fecha" @(Request["criterio"] == "Fecha" ? "selected" : "")>Filtrar por Fecha</option>
             </select>
-            <input type="text" name="valor" class="form-control" placeholder="Escriba aquí... (ej: 01/06/2026)" style="width: 250px;" />
+
+            <div style="position: relative;">
+                <input type="text" name="valor" id="criterioBusqueda" value="@Request["valor"]"
+                       class="form-control" placeholder="Escriba aquí..." list="filtroSuggestions" autocomplete="off" style="width: 250px;" />
+
+                <datalist id="filtroSuggestions"></datalist>
+            </div>
+
             <button type="submit" class="btn btn-primary">Buscar</button>
             <a href="@Url.Action("Index", "Investigador")" class="btn btn-secondary">Limpiar Filtros</a>
+
+            <div id="validationMessage" class="alert alert-danger py-2 px-3 m-0 w-100 d-none" style="font-size: 14px; margin-top: 10px !important;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span id="errorText"></span>
+            </div>
         </div>
     }
 
@@ -70,3 +84,87 @@
         </div>
     </div>
 </div>
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+            // 1. Mapear las listas enviadas desde el Controlador en formato JSON seguro
+            var topIDs = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.TopIDs ?? new List<string>()));
+            var topFechas = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.TopFechas ?? new List<string>()));
+
+            // 2. Función para intercambiar las primeras 5 sugerencias en el cuadro de texto
+            function cambiarSugerencias() {
+                var seleccion = $("#tipoFiltro").val();
+                var $datalist = $("#filtroSuggestions");
+                var $input = $("#criterioBusqueda");
+
+                $datalist.empty(); // Limpia los residuos del buscador
+
+                var opciones = [];
+                if (seleccion === "ID") {
+                    opciones = topIDs;
+                    $input.attr("placeholder", "Ej: 5001");
+                } else if (seleccion === "Fecha") {
+                    opciones = topFechas;
+                    $input.attr("placeholder", "Ej: 01/06/2026");
+                } else {
+                    $input.attr("placeholder", "Escriba aquí...");
+                }
+
+                // Inyectar las 5 opciones en el datalist nativo
+                opciones.forEach(function (item) {
+                    $datalist.append($('<option>').val(item));
+                });
+            }
+
+            // Cambiar sugerencias al seleccionar una opción distinta
+            $("#tipoFiltro").change(function () {
+                cambiarSugerencias();
+            });
+
+            // Ejecución inicial por si la página ya carga con parámetros
+            cambiarSugerencias();
+
+            // 3. LOGICA DE VALIDACIÓN ANTES DE ENVIAR (SUBMIT)
+            $("#filterForm").submit(function (e) {
+                var tipoFiltro = $("#tipoFiltro").val();
+                var criterio = $.trim($("#criterioBusqueda").val());
+                var $errorContainer = $("#validationMessage");
+                var $errorText = $("#errorText");
+
+                // Condición: Si falta uno de los dos o ambos campos están vacíos
+                if (tipoFiltro === "" || criterio === "") {
+                    e.preventDefault(); // Bloquea por completo el envío del formulario
+
+                    // Determinar el mensaje exacto según la omisión del usuario
+                    if (tipoFiltro === "" && criterio === "") {
+                        $errorText.text("Debe seleccionar un método de filtro (ID o Fecha) y escribir el criterio de búsqueda.");
+                    } else if (tipoFiltro === "") {
+                        $errorText.text("Falta seleccionar una opción. Por favor especifique si el filtro es por ID o por Fecha.");
+                    } else {
+                        $errorText.text("El campo de búsqueda está vacío. Ingrese el valor que desea filtrar.");
+                    }
+
+                    // Mostrar el cuadro de alerta de Bootstrap de forma fluida
+                    $errorContainer.removeClass("d-none");
+
+                    // Agregar borde rojo indicador de error (Estilo nativo Bootstrap)
+                    if (tipoFiltro === "") $("#tipoFiltro").addClass("is-invalid");
+                    if (criterio === "") $("#criterioBusqueda").addClass("is-invalid");
+
+                } else {
+                    // Si todo está correcto se limpian los estilos de error y se procesa el filtro
+                    $errorContainer.addClass("d-none");
+                    $("#tipoFiltro, #criterioBusqueda").removeClass("is-invalid");
+                }
+            });
+
+            // Quitar el estado e indicador de error rojo de forma interactiva mientras el usuario escribe o cambia la opción
+            $("#tipoFiltro, #criterioBusqueda").on("input change", function () {
+                if ($(this).val() !== "") {
+                    $(this).removeClass("is-invalid");
+                }
+            });
+        });
+    </script>
+}

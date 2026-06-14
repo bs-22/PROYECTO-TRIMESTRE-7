@@ -2,64 +2,325 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<div class="container-fluid p-4">
-    <h3 class="mb-4">Consultar Reuniones</h3>
 
-    <form method="get" class="row g-3 mb-4 align-items-end">
+<style>
+    .table-header-banner {
+        padding: 15px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        border-radius: .5rem .5rem 0 0;
+    }
+
+    .btn-search-custom {
+        background-color: #278a5f;
+        color: white;
+        border: none;
+    }
+
+        .btn-search-custom:hover {
+            background-color: #1e6d4a;
+            color: white;
+            box-shadow: 0 4px 6px rgba(39, 138, 95, 0.3);
+        }
+</style>
+
+<div class="container-fluid p-4">
+    <div class="mb-4 mt-2">
+        <h3 class="fw-bold text-dark">
+            <i class="bi bi-search me-2" style="color: #278a5f;"></i>Consultar Reuniones
+        </h3>
+        <p class="text-muted small">Busque reuniones por ID o fecha específica dentro del historial del semillero.</p>
+    </div>
+
+    <form method="get" id="filterForm" class="row g-3 mb-4 align-items-end">
         <div class="col-md-3">
-            <select name="criterio" class="form-select">
-                <option value="ID">Filtrar por ID</option>
-                <option value="Fecha">Fecha (dd-mm-aaaa)</option>
+            <select name="criterio" id="tipoFiltro" class="form-select">
+                <option value="">Filtrar por...</option>
+                <option value="ID" @(Request["criterio"] == "ID" ? "selected" : "")>Filtrar por ID</option>
+                <option value="Fecha" @(Request["criterio"] == "Fecha" ? "selected" : "")>Fecha (dd-mm-aaaa)</option>
             </select>
         </div>
         <div class="col-md-5">
-            <input type="text" name="valor" class="form-control" placeholder="Valor a buscar..." value="@ViewBag.Valor" required />
+            <input type="text" name="valor" id="criterioBusqueda" class="form-control" placeholder="Valor a buscar..." value="@Request["valor"]" list="filtroSuggestions" autocomplete="off" />
+            <datalist id="filtroSuggestions"></datalist>
+
             @if (ViewBag.Error != null)
-            {<small class="text-danger">@ViewBag.Error</small>}
+            {
+                <small class="text-danger">@ViewBag.Error</small>
+            }
         </div>
-        <div class="col-md-2"><button type="submit" class="btn btn-success w-100">Buscar</button></div>
-        <div class="col-md-2"><a href="@Url.Action("ConsultarReuniones", "Lider")" class="btn btn-secondary w-100">Limpiar</a></div>
+
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-search-custom w-100">Buscar</button>
+        </div>
+
+        <div class="col-md-2">
+            <a href="@Url.Action("ConsultarReuniones", "Lider")" class="btn btn-secondary w-100">Limpiar</a>
+        </div>
+
+        <div id="validationMessage" class="alert alert-danger py-2 px-3 mt-2 mb-0 col-12 d-none" style="font-size: 14px;">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> <span id="errorText"></span>
+        </div>
     </form>
 
-    <table class="table table-hover">
-        <thead class="table-success">
-            <tr>
-                <th>ID</th>
-                <th>Asunto / Descripción</th>
-                <th>Fecha</th>
-                <th>Lugar / Enlace</th>
-                <th>Hora Inicio</th>
-                <th>Hora Fin</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model != null && Model.Any())
-            {
-                foreach (var item in Model)
+    <div class="table-responsive-container" style="margin-top: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px;">
+        <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%);">
+            <i class="bi bi-card-list me-2"></i>Resultados de Búsqueda de Reuniones
+        </div>
+
+        <table class="table table-hover align-middle text-center mb-0" style="background-color: white;">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Lugar / Enlace</th>
+                    <th>Hora Inicio</th>
+                    <th>Hora Fin</th>
+                    <th>Info</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        string rawInicio = item.hora_reunion != null ? item.hora_reunion.ToString() : "00:00";
+                        string rawFin = item.hora_fin_reunion != null ? item.hora_fin_reunion.ToString() : "00:00";
+
+                        string hIniClean = rawInicio.Replace(" AM", "").Replace(" PM", "").Trim();
+                        string hFinClean = rawFin.Replace(" AM", "").Replace(" PM", "").Trim();
+
+                        string hIni24 = hIniClean.Length > 5 ? hIniClean.Substring(0, 5) : hIniClean;
+                        string hFin24 = hFinClean.Length > 5 ? hFinClean.Substring(0, 5) : hFinClean;
+
+                        string hIniVisual = hIni24;
+                        string hFinVisual = hFin24;
+
+                        if (DateTime.TryParse(hIni24, out DateTime dtIni))
+                        {
+                            hIniVisual = dtIni.ToString("HH:mm tt", System.Globalization.CultureInfo.InvariantCulture);
+                        }
+                        if (DateTime.TryParse(hFin24, out DateTime dtFin))
+                        {
+                            hFinVisual = dtFin.ToString("HH:mm tt", System.Globalization.CultureInfo.InvariantCulture);
+                        }
+
+                        // Validación dinámica de estados basada en fechas
+                        string estado = item.estado_reunion;
+
+                        if (item.fecha_reunion.Date < DateTime.Today)
+                        {
+                            estado = "Finalizada";
+                        }
+                        else if (item.fecha_reunion.Date > DateTime.Today)
+                        {
+                            estado = "Programada";
+                        }
+                        else
+                        {
+                            if (string.IsNullOrEmpty(estado) || estado.Equals("Finalizada", StringComparison.OrdinalIgnoreCase))
+                            {
+                                estado = "En curso";
+                            }
+                        }
+
+                        <tr>
+                            <td><strong>@item.ID_reunion</strong></td>
+                            <td>@item.fecha_reunion.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                <span class="badge bg-light text-dark border" style="padding: 5px 8px;">
+                                    📍 @item.lugar_reunion
+                                </span>
+                            </td>
+                            <td>@hIniVisual</td>
+                            <td>@hFinVisual</td>
+
+                            <td>
+                                <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
+                                        onclick="verFichaTecnicaReunion(this)"
+                                        data-id="@item.ID_reunion"
+                                        data-fecha="@item.fecha_reunion.ToString("dd/MM/yyyy")"
+                                        data-lugar="@item.lugar_reunion"
+                                        data-horario="@hIniVisual - @hFinVisual"
+                                        data-estado="@estado"
+                                        data-asunto="@item.descripcion_reunion">
+                                    <i class="bi bi-exclamation-circle-fill fs-5" title="Ver hoja de detalles de la reunión"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
                 {
                     <tr>
-                        <td><strong>@item.ID_reunion</strong></td>
-                        <td>@item.descripcion_reunion</td>
-                        <td>@item.fecha_reunion.ToString("dd/MM/yyyy")</td>
-                        <td>
-                            <span class="badge bg-light text-dark border" style="padding: 5px 8px;">
-                                📍 @item.lugar_reunion
-                            </span>
+                        <td colspan="6" class="text-center text-muted" style="padding: 25px; font-style: italic; background-color: #f9f9f9;">
+                            <i class="bi bi-calendar-x" style="margin-right: 8px; font-size: 1.2rem; vertical-align: middle;"></i>
+                            No tienes reuniones personalizadas creadas o asignadas en este momento.
                         </td>
-                        <td>@item.hora_reunion</td>
-                        <td>@item.hora_fin_reunion</td>
                     </tr>
                 }
-            }
-            else
-            {
-                <tr>
-                    <td colspan="6" class="text-center text-muted" style="padding: 25px; font-style: italic; background-color: #f9f9f9;">
-                        <i class="bi bi-calendar-x" style="margin-right: 8px; font-size: 1.2rem; vertical-align: middle;"></i>
-                        No tienes reuniones personalizadas creadas o asignadas en este momento.
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<div class="modal fade" id="modalDetallesReunion" tabindex="-1" aria-labelledby="modalDetallesReunionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+            <div class="modal-header text-white" style="background-color: #278a5f; border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                <h5 class="modal-title fw-bold" id="modalDetallesReunionLabel">
+                    <i class="bi bi-calendar2-week me-2"></i>Ficha de Control del Comité
+                </h5>
+                <button type="button" class="border-0 bg-transparent fs-4 text-white" onclick="cerrarModalManual()" style="outline: none;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4 border-0 bg-white">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">CÓDIGO DE ACTA:</small>
+                        <span id="detId" class="fw-bold text-dark fs-5">#0000</span>
+                    </div>
+                    <div class="col-6 text-end mb-3">
+                        <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">ESTADO ACTUAL:</small>
+                        <span id="detEstado" class="badge text-white px-2 py-1 small fw-semibold" style="background-color: #278a5f;">Programada</span>
+                    </div>
+                    <div class="col-12"><hr class="mt-0 mb-3" /></div>
+                    <div class="col-6 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-calendar3 text-secondary me-2"></i><strong>Fecha:</strong></p>
+                        <span id="detFecha" class="text-secondary">--/--/----</span>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-clock text-secondary me-2"></i><strong>Horario Absoluto:</strong></p>
+                        <span id="detHorario" class="text-secondary">00:00 - 00:00</span>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <p class="mb-1 small"><i class="bi bi-geo-alt-fill text-secondary me-2"></i><strong>Lugar Asignado / Link:</strong></p>
+                        <span id="detLugar" class="text-dark fw-semibold">Ninguno</span>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <p class="mb-1 small"><i class="bi bi-chat-right-text-fill text-secondary me-2"></i><strong>Asunto Completo / Descripción de Agenda:</strong></p>
+                        <div class="p-3 bg-light rounded text-secondary small text-start" id="detAsunto" style="white-space: pre-wrap; max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6;">
+                            Sin descripción detallada.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3 bg-light" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;">
+                <button type="button" class="btn btn-secondary btn-sm px-4" onclick="cerrarModalManual()">Cerrar Ventana</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        var topIDs = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.TopIDs ?? new List<string>()));
+        var topFechas = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.TopFechas ?? new List<string>()));
+
+        function cambiarSugerencias() {
+            var seleccion = $("#tipoFiltro").val();
+            var $datalist = $("#filtroSuggestions");
+            var $input = $("#criterioBusqueda");
+
+            $datalist.empty();
+
+            var opciones = [];
+            if (seleccion === "ID") {
+                opciones = topIDs;
+                $input.attr("placeholder", "Ej: 5001");
+            } else if (seleccion === "Fecha") {
+                opciones = topFechas;
+                $input.attr("placeholder", "Ej: 14/06/2026");
+            } else {
+                $input.attr("placeholder", "Valor a buscar...");
+            }
+
+            opciones.forEach(function (item) {
+                $datalist.append($('<option>').val(item));
+            });
+        }
+
+        $("#tipoFiltro").change(cambiarSugerencias);
+        cambiarSugerencias();
+
+        $("#filterForm").submit(function (e) {
+            var tipoFiltro = $("#tipoFiltro").val();
+            var criterio = $.trim($("#criterioBusqueda").val());
+            var $errorContainer = $("#validationMessage");
+            var $errorText = $("#errorText");
+
+            $("#tipoFiltro, #criterioBusqueda").removeClass("is-invalid");
+
+            if (tipoFiltro === "" || criterio === "") {
+                e.preventDefault();
+
+                if (tipoFiltro === "" && criterio === "") {
+                    $errorText.text("Debe seleccionar un método de filtro (ID o Fecha) y escribir el criterio de búsqueda.");
+                } else if (tipoFiltro === "") {
+                    $errorText.text("Falta seleccionar una opción de filtro. Especifique si buscará por ID o por Fecha.");
+                } else {
+                    $errorText.text("El campo de búsqueda está vacío. Por favor escriba el valor que desea filtrar.");
+                }
+
+                $errorContainer.removeClass("d-none");
+
+                if (tipoFiltro === "") $("#tipoFiltro").addClass("is-invalid");
+                if (criterio === "") $("#criterioBusqueda").addClass("is-invalid");
+            } else {
+                $errorContainer.addClass("d-none");
+            }
+        });
+
+        $("#tipoFiltro, #criterioBusqueda").on("input change", function () {
+            if ($(this).val() !== "") {
+                $(this).removeClass("is-invalid");
+            }
+        });
+    });
+
+    function verFichaTecnicaReunion(btn) {
+        const data = btn.dataset;
+
+        document.getElementById("detId").innerText = "#" + data.id;
+        document.getElementById("detFecha").innerText = data.fecha;
+        document.getElementById("detLugar").innerText = data.lugar;
+        document.getElementById("detHorario").innerText = data.horario;
+        document.getElementById("detEstado").innerText = data.estado;
+        document.getElementById("detAsunto").innerText = data.asunto;
+
+        // 🌟 ACTUALIZACIÓN DINÁMICA DE COLORES DEL BADGE EN LA VENTANA MODAL FLOTANTE
+        const badge = document.getElementById("detEstado");
+        if (data.estado.toLowerCase() === "finalizada") {
+            badge.className = "badge bg-danger text-white px-2 py-1 small fw-semibold";
+        } else if (data.estado.toLowerCase() === "en curso" || data.estado.toLowerCase() === "iniciada") {
+            badge.className = "badge bg-info text-white px-2 py-1 small fw-semibold";
+        } else {
+            badge.className = "badge text-white px-2 py-1 small fw-semibold";
+            badge.style.backgroundColor = "#278a5f"; // Color verde institucional para Programada
+        }
+
+        const modal = document.getElementById("modalDetallesReunion");
+        modal.style.display = "block";
+        modal.style.backgroundColor = "rgba(0,0,0,0.5)";
+
+        setTimeout(() => {
+            modal.classList.add("show");
+        }, 10);
+
+        document.body.style.overflow = "hidden";
+    }
+
+    function cerrarModalManual() {
+        const modal = document.getElementById("modalDetallesReunion");
+        modal.classList.remove("show");
+
+        setTimeout(() => {
+            modal.style.display = "none";
+            document.body.style.overflow = "auto";
+        }, 200);
+    }
+</script>

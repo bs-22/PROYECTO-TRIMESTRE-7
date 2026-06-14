@@ -7,7 +7,76 @@
     decimal idSemilleroSeleccionadoSeccion4 = ViewBag.IdSemilleroSeleccionado4 ?? 0;
 }
 
+<style>
+    /* Estilos para mantener consistencia con los botones de filtros */
+    .btn-action-custom {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .btn-search-custom {
+        background-color: #278a5f;
+        color: white;
+        border: none;
+    }
+
+        .btn-search-custom:hover {
+            background-color: #1e6d4a;
+            color: white;
+            box-shadow: 0 4px 6px rgba(39, 138, 95, 0.3);
+        }
+
+    .btn-clear-custom {
+        background-color: transparent;
+        color: #6c757d;
+        border: 1px solid #6c757d;
+    }
+
+        .btn-clear-custom:hover {
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+
+    /* Banners de tabla */
+    .table-header-banner {
+        padding: 15px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        border-radius: .5rem .5rem 0 0;
+    }
+
+    /* Pestañas (eliminar subrayado azul, letra negra, fondo verde al activarse) */
+    .nav-tabs .nav-link {
+        color: #333333 !important; /* Letra negra/oscura */
+        border: none !important;
+        text-decoration: none !important;
+    }
+
+        .nav-tabs .nav-link.active {
+            background-color: #278a5f !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 6px rgba(39, 138, 95, 0.3);
+        }
+</style>
+
 <div class="container-fluid">
+
+    <div class="mb-4 mt-2">
+        <h3 class="fw-bold text-dark">
+            <!-- Ícono de personas/usuario con el color verde institucional -->
+            <i class="bi bi-people-fill me-2" style="color: #278a5f;"></i>Módulo de Gestión de Semilleros
+        </h3>
+        <p class="text-muted small">Administre la información de los semilleros, asigne investigadores y filtre datos registrados.</p>
+    </div>
 
     @if (TempData["Error"] != null)
     {
@@ -18,12 +87,11 @@
     }
 
     <div class="row">
-        <!-- SECCIÓN DE BÚSQUEDA GENERAL (IZQUIERDA) -->
         <div class="col-xl-3 col-lg-4 mb-4">
-            <div class="dashboard-card shadow-sm">
-                <h5 class="card-title text-primary mb-3">
-                    <i class="bi bi-funnel-fill text-primary me-2"></i>Búsqueda General
-                </h5>
+            <div class="dashboard-card shadow-sm h-100">
+                <div class="card-title text-dark mb-4">
+                    <i class="bi bi-search me-2" style="color: #278a5f;"></i>Búsqueda General
+                </div>
 
                 @using (Html.BeginForm("GestionarSemillero", "Lider", FormMethod.Get))
                 {
@@ -57,32 +125,35 @@
                         </select>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label class="form-label small fw-bold text-muted">Fecha de Creación</label>
                         <input type="date" name="fechaFiltro" class="form-control-custom" value="2026-06-06" />
                     </div>
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary fw-bold" style="border-radius: 8px;">
-                            <i class="bi bi-search me-2"></i>Aplicar Filtros
+                    <div class="mb-3 d-flex flex-column gap-2">
+                        <button type="submit" class="btn-action-custom btn-search-custom">
+                            <i class="bi bi-filter me-2"></i>Buscar con filtro
                         </button>
+
+                        <a href="@Url.Action("GestionarSemillero", "Lider")" class="btn-action-custom btn-clear-custom text-decoration-none">
+                            <i class="bi bi-x-circle me-2"></i> Limpiar filtros
+                        </a>
                     </div>
                 }
             </div>
         </div>
 
-        <!-- SECCIÓN PRINCIPAL DE CONTENIDOS (DERECHA) -->
         <div class="col-xl-9 col-lg-8">
 
             <ul class="nav nav-tabs border-0 mb-4 bg-white p-2 shadow-sm" style="border-radius: 12px; gap: 10px;">
                 <li class="nav-item">
-                    <button class="nav-link border-0 fw-bold px-4 py-2 @(seccionActiva != "investigadores" && seccionActiva != "filtros" ? "active text-success bg-light" : "text-muted bg-transparent")"
+                    <button class="nav-link border-0 fw-bold px-4 py-2 @(seccionActiva != "investigadores" && seccionActiva != "filtros" ? "active" : "")"
                             id="btn-tab-semilleros" onclick="cambiarVistaPestaña('semilleros')" style="border-radius: 8px; transition: all 0.2s;">
                         <i class="bi bi-building me-2"></i>Gestión de Semilleros
                     </button>
                 </li>
                 <li class="nav-item">
-                    <button class="nav-link border-0 fw-bold px-4 py-2 @(seccionActiva == "investigadores" ? "active text-success bg-light" : "text-muted bg-transparent")"
+                    <button class="nav-link border-0 fw-bold px-4 py-2 @(seccionActiva == "investigadores" ? "active" : "")"
                             id="btn-tab-investigadores" onclick="cambiarVistaPestaña('investigadores')" style="border-radius: 8px; transition: all 0.2s;">
                         <i class="bi bi-people-fill me-2"></i>Gestión de Investigadores
                     </button>
@@ -90,7 +161,7 @@
                 @if (seccionActiva == "filtros")
                 {
                     <li class="nav-item ms-auto">
-                        <span class="badge bg-primary-light text-primary p-2 fw-bold" style="border-radius: 8px;">
+                        <span class="badge text-white p-2 fw-bold" style="background-color: #278a5f; border-radius: 8px;">
                             <i class="bi bi-funnel me-1"></i> Viendo Resultados Filtrados
                         </span>
                     </li>
@@ -99,7 +170,6 @@
 
             <div class="tab-content">
 
-                <!-- PESTAÑA: GESTIÓN DE SEMILLEROS -->
                 <div class="tab-pane fade @(seccionActiva != "investigadores" && seccionActiva != "filtros" ? "show active" : "")">
 
                     @using (Html.BeginForm("GestionarSemillero", "Lider", FormMethod.Post, new { id = "formSemillero" }))
@@ -107,7 +177,7 @@
                         <div class="row">
                             <div class="col-md-6 mb-4">
                                 <div class="dashboard-card h-100 shadow-sm">
-                                    <h5 class="card-title mb-3"><span class="step-badge">1</span> Identificación</h5>
+                                    <h5 class="card-title mb-3"><span class="step-badge text-white" style="background-color: #278a5f;">1</span> Identificación</h5>
                                     <div class="mb-3">
                                         <input type="text" id="txtID" name="ID_semillero" class="form-control-custom" value="@ViewBag.SiguienteID" readonly style="background-color: #f8f9fa; cursor: not-allowed;" required />
                                     </div>
@@ -119,7 +189,7 @@
 
                             <div class="col-md-6 mb-4">
                                 <div class="dashboard-card h-100 shadow-sm">
-                                    <h5 class="card-title mb-3"><span class="step-badge">2</span> Clasificación</h5>
+                                    <h5 class="card-title mb-3"><span class="step-badge text-white" style="background-color: #278a5f;">2</span> Clasificación</h5>
                                     <div class="mb-3">
                                         <input type="text" id="txtLinea" name="linea_investigacion" class="form-control-custom" placeholder="Línea de investigación" required />
                                     </div>
@@ -131,26 +201,25 @@
                         </div>
 
                         <div class="dashboard-card mb-4 shadow-sm">
-                            <h5 class="card-title mb-3"><span class="step-badge">3</span> Descripción General</h5>
+                            <h5 class="card-title mb-3"><span class="step-badge text-white" style="background-color: #278a5f;">3</span> Descripción General</h5>
                             <textarea id="txtDescripcion" name="descripcion_semillero" class="form-control-custom" rows="3" placeholder="Escriba la descripción del semillero..."></textarea>
                         </div>
 
                         <div class="d-flex flex-wrap gap-2 mb-4">
-                            <button type="submit" name="accion" value="agregar" class="btn btn-success px-4" style="border-radius: 8px;"><i class="bi bi-plus-circle me-2"></i>Agregar</button>
-                            <button type="submit" name="accion" value="actualizar" class="btn btn-warning px-4 text-white" style="border-radius: 8px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
-                            <button type="submit" name="accion" value="eliminar" class="btn btn-danger px-4" style="border-radius: 8px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
-                            <button type="button" id="btnLimpiar" class="btn btn-secondary px-4" style="border-radius: 8px;"><i class="bi bi-eraser me-2"></i>Limpiar</button>
+                            <button type="submit" name="accion" value="agregar" class="btn text-white px-4" style="background-color: #278a5f; border-radius: 8px;"><i class="bi bi-plus-circle me-2"></i>Agregar</button>
+                            <button type="submit" name="accion" value="actualizar" class="btn text-white px-4" style="background-color: #c98d26; border-radius: 8px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
+                            <button type="submit" name="accion" value="eliminar" class="btn text-white px-4" style="background-color: #d42346; border-radius: 8px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
+                            <button type="button" id="btnLimpiar" class="btn btn-secondary text-white px-4" style="border-radius: 8px;"><i class="bi bi-eraser me-2"></i>Limpiar</button>
                         </div>
                     }
 
-                    <!-- FIX IMPORTANTE: La tabla de visualización ahora está fuera del Formulario para evitar falsos Submits -->
-                    <div class="dashboard-card shadow-sm">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h5 class="card-title m-0"><i class="bi bi-table text-success me-2"></i>Semilleros del Sistema</h5>
-                            <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Haga clic en una fila para editar sus datos arriba</small>
+                    <div class="table-responsive-container shadow-sm p-0 mb-4" style="border-radius: 8px; overflow: hidden; background-color: white;">
+                        <div class="table-header-banner text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%);">
+                            <div><i class="bi bi-table me-2"></i>Semilleros del Sistema</div>
+                            <small class="text-white-50 fw-normal"><i class="bi bi-info-circle me-1"></i>Haga clic en una fila para editar</small>
                         </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle" id="tablaSemilleros" style="cursor: pointer;">
+                        <div class="table-responsive p-3">
+                            <table class="table table-hover align-middle mb-0" id="tablaSemilleros" style="cursor: pointer;">
                                 <thead class="table-light">
                                     <tr>
                                         <th>ID</th>
@@ -166,10 +235,10 @@
                                     {
                                         <tr>
                                             <td class="fw-bold ID-celda">@item.ID_semillero</td>
-                                            <td>@item.nombre_semillero</td>
+                                            <td style="color: #32325d; font-weight: 600;">@item.nombre_semillero</td>
                                             <td>@(item.fecha_creacion_semillero != null ? item.fecha_creacion_semillero.ToString("yyyy-MM-dd") : "")</td>
                                             <td>@item.linea_investigacion</td>
-                                            <td><span class="badge bg-success text-white p-2" style="border-radius:6px;">@item.estado</span></td>
+                                            <td><span class="badge text-white p-2" style="background-color: #278a5f; border-radius:6px;">@item.estado</span></td>
                                             <td style="display:none;" class="descripcion-oculta">@item.descripcion_semillero</td>
                                         </tr>
                                     }
@@ -180,12 +249,11 @@
 
                 </div>
 
-                <!-- PESTAÑA: GESTIÓN DE INVESTIGADORES -->
                 <div class="tab-pane fade @(seccionActiva == "investigadores" ? "show active" : "")">
                     <div class="row">
                         <div class="col-lg-4 mb-4">
                             <div class="dashboard-card shadow-sm h-100">
-                                <h5 class="card-title text-success mb-3"><i class="bi bi-gear-fill me-2"></i>Acciones de Asignación</h5>
+                                <h5 class="card-title mb-3" style="color: #278a5f;"><i class="bi bi-gear-fill me-2"></i>Acciones de Asignación</h5>
 
                                 @using (Html.BeginForm("ProcesarAccionesInvestigadores", "Lider", FormMethod.Post, new { id = "formAccionesInvestigadores" }))
                                 {
@@ -195,7 +263,7 @@
 
                                     <div class="mb-4">
                                         <label class="form-label small fw-bold text-muted">Semillero a Consultar</label>
-                                        <select id="comboSemilleroSeccion4" class="form-control-custom" onchange="cambiarSemilleroSeccion4(this.value)" style="border-color: #74c69d;">
+                                        <select id="comboSemilleroSeccion4" class="form-control-custom" onchange="cambiarSemilleroSeccion4(this.value)" style="border-color: #278a5f;">
                                             <option value="">Seleccione un semillero de origen...</option>
                                             @if (ViewBag.SemillerosFiltro != null)
                                             {
@@ -208,11 +276,11 @@
                                     </div>
 
                                     <div class="d-flex flex-column gap-2">
-                                        <button type="button" onclick="ejecutarAccionInvestigador('habilitar')" class="btn btn-light text-start border-0 p-3" style="border-radius: 8px; font-weight: 500;"><i class="bi bi-person-check text-success me-3"></i>Habilitar Investigador</button>
+                                        <button type="button" onclick="ejecutarAccionInvestigador('habilitar')" class="btn btn-light text-start border-0 p-3" style="border-radius: 8px; font-weight: 500;"><i class="bi bi-person-check me-3" style="color: #278a5f;"></i>Habilitar Investigador</button>
                                         <button type="button" onclick="ejecutarAccionInvestigador('deshabilitar')" class="btn btn-light text-start border-0 p-3" style="border-radius: 8px; font-weight: 500;"><i class="bi bi-person-x text-warning me-3"></i>Deshabilitar Investigador</button>
                                         <button type="button" onclick="ejecutarAccionInvestigador('eliminar')" class="btn btn-outline-danger text-start p-3" style="border-radius: 8px; font-weight: 500;"><i class="bi bi-trash me-3"></i>Eliminar de este Semillero</button>
 
-                                        <button type="button" id="btnAbrirModalAgregar" class="btn btn-success text-center mt-3 py-2 fw-bold" style="border-radius: 8px;"><i class="bi bi-person-plus-fill me-2"></i>Agregar Investigador</button>
+                                        <button type="button" id="btnAbrirModalAgregar" class="btn text-white text-center mt-3 py-2 fw-bold" style="background-color: #278a5f; border-radius: 8px;"><i class="bi bi-person-plus-fill me-2"></i>Agregar Investigador</button>
                                     </div>
                                 }
 
@@ -223,12 +291,12 @@
                         </div>
 
                         <div class="col-lg-8 mb-4">
-                            <div class="dashboard-card shadow-sm h-100">
-                                <h5 class="card-title mb-4">
-                                    <i class="bi bi-people-fill text-info me-2"></i>Miembros Vinculados: <span class="text-success">@ViewBag.NombreSemilleroSeleccionado4</span>
-                                </h5>
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle" id="tablaInvestigadores" style="cursor:pointer;">
+                            <div class="table-responsive-container shadow-sm p-0 h-100" style="border-radius: 8px; overflow: hidden; background-color: white;">
+                                <div class="table-header-banner text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%);">
+                                    <div><i class="bi bi-people-fill me-2"></i>Miembros Vinculados: @ViewBag.NombreSemilleroSeleccionado4</div>
+                                </div>
+                                <div class="table-responsive p-3">
+                                    <table class="table table-hover align-middle mb-0" id="tablaInvestigadores" style="cursor:pointer;">
                                         <thead class="table-light">
                                             <tr>
                                                 <th>ID</th>
@@ -245,9 +313,18 @@
                                                 {
                                                     <tr>
                                                         <td class="fw-bold">@inv.ID_investigador</td>
-                                                        <td>@inv.NombreCompleto</td>
+                                                        <td style="color: #32325d; font-weight: 600;">@inv.NombreCompleto</td>
                                                         <td>@inv.correo_usuario</td>
-                                                        <td><span class="badge @(inv.estado_usuario == "activo" || inv.estado_usuario == "Activo" ? "bg-success" : "bg-danger") text-white p-2" style="border-radius:6px;">@inv.estado_usuario</span></td>
+                                                        <td>
+                                                            @if (inv.estado_usuario == "activo" || inv.estado_usuario == "Activo")
+                                                            {
+                                                                <span class="badge text-white p-2" style="background-color: #278a5f; border-radius:6px;">@inv.estado_usuario</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-danger text-white p-2" style="border-radius:6px;">@inv.estado_usuario</span>
+                                                            }
+                                                        </td>
                                                         <td style="display:none;" class="id-user-oculto">@inv.ID_usuario</td>
                                                     </tr>
                                                 }
@@ -264,17 +341,16 @@
                     </div>
                 </div>
 
-                <!-- SECCIÓN DE RESULTADOS DE FILTROS -->
                 @if (seccionActiva == "filtros")
                 {
                     <div class="tab-pane fade show active">
-                        <div class="dashboard-card shadow-sm">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h5 class="card-title m-0"><i class="bi bi-funnel text-primary me-2"></i>Resultados de la Búsqueda Avanzada</h5>
-                                <a href="@Url.Action("GestionarSemillero", "Lider", new { seccionCargada = "semilleros" })" class="btn btn-sm btn-outline-secondary" style="border-radius:6px;">Restablecer Vista</a>
+                        <div class="table-responsive-container shadow-sm p-0 mb-4" style="border-radius: 8px; overflow: hidden; background-color: white;">
+                            <div class="table-header-banner text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%);">
+                                <div><i class="bi bi-funnel me-2"></i>Resultados de la Búsqueda Avanzada</div>
+                                <a href="@Url.Action("GestionarSemillero", "Lider", new { seccionCargada = "semilleros" })" class="btn btn-sm btn-light text-dark fw-bold" style="border-radius:6px;">Restablecer Vista</a>
                             </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle">
+                            <div class="table-responsive p-3">
+                                <table class="table table-hover align-middle mb-0">
                                     <thead class="table-light">
                                         <tr>
                                             <th>Semillero</th>
@@ -288,7 +364,7 @@
                                             foreach (var item in ViewBag.ResultadoFiltros as List<GestionSemillero1.Models.semillero>)
                                             {
                                                 <tr>
-                                                    <td class="fw-bold">@item.nombre_semillero</td>
+                                                    <td class="fw-bold" style="color: #32325d;">@item.nombre_semillero</td>
                                                     <td>@item.linea_investigacion</td>
                                                     <td>@item.fecha_creacion_semillero.ToString("yyyy-MM-dd")</td>
                                                 </tr>
@@ -310,21 +386,20 @@
     </div>
 </div>
 
-<!-- MODAL DE AGREGAR INVESTIGADOR -->
 <div class="modal fade" id="modalAgregarInvestigador" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius:12px;">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold text-primary"><i class="bi bi-person-plus-fill me-2"></i>Asignar Nuevo Investigador</h5>
-                <button type="button" class="btn-close" id="btnCerrarModalX" aria-label="Close"></button>
+        <div class="modal-content" style="border-radius:12px; overflow: hidden; border: none;">
+            <div class="modal-header text-white" style="background-color: #278a5f;">
+                <h5 class="modal-title fw-bold text-white"><i class="bi bi-person-plus-fill me-2"></i>Asignar Nuevo Investigador</h5>
+                <button type="button" class="btn-close btn-close-white" id="btnCerrarModalX" aria-label="Close"></button>
             </div>
             @using (Html.BeginForm("ProcesarAccionesInvestigadores", "Lider", FormMethod.Post))
             {
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <input type="hidden" name="idSemilleroSeleccionado" value="@idSemilleroSeleccionadoSeccion4" />
                     <input type="hidden" name="accionInvestigador" value="agregar" />
 
-                    <p class="small text-muted mb-3">Vinculando personal al grupo ID: <strong class="text-success">@idSemilleroSeleccionadoSeccion4</strong></p>
+                    <p class="small text-muted mb-3">Vinculando personal al grupo ID: <strong style="color: #278a5f;">@idSemilleroSeleccionadoSeccion4</strong></p>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -365,9 +440,9 @@
                         <input type="text" name="nuevoInvestigadorTel" class="form-control-custom" placeholder="Número de contacto" required />
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" id="btnCerrarModalCancel">Cancelar</button>
-                    <button type="submit" class="btn btn-success btn-sm fw-bold">Guardar Registro</button>
+                <div class="modal-footer bg-light p-3 border-0">
+                    <button type="button" class="btn btn-secondary btn-sm px-4" id="btnCerrarModalCancel" style="border-radius: 6px;">Cancelar</button>
+                    <button type="submit" class="btn text-white btn-sm fw-bold px-4" style="background-color: #278a5f; border-radius: 6px;">Guardar Registro</button>
                 </div>
             }
         </div>
@@ -450,18 +525,14 @@
         if (btnCerrarX) btnCerrarX.addEventListener("click", cerrarModal);
         if (btnCerrarCancel) btnCerrarCancel.addEventListener("click", cerrarModal);
 
-        // =========================================================================
-        // MANEJO LOCAL DE SELECCIÓN DE FILAS DE SEMILLERO (CORREGIDO SIN SUBMIT)
-        // =========================================================================
         if (tablaSemilleros) {
             tablaSemilleros.querySelectorAll("tbody tr").forEach(fila => {
                 fila.addEventListener("click", function () {
                     if (this.querySelector(".ID-celda")) {
-                        // Sombreado elegante de fila
+                        // Sombreado elegante de fila usando el verde institucional
                         tablaSemilleros.querySelectorAll("tbody tr").forEach(r => r.style.backgroundColor = "");
-                        this.style.backgroundColor = "rgba(40, 167, 69, 0.08)";
+                        this.style.backgroundColor = "rgba(39, 138, 95, 0.08)";
 
-                        // Llenado instantáneo en caliente de controles superiores
                         txtID.value = this.cells[0].innerText.trim();
                         txtNombre.value = this.cells[1].innerText.trim();
                         txtFecha.value = this.cells[2].innerText.trim();
@@ -491,13 +562,14 @@
                     if (this.querySelector(".id-user-oculto")) {
                         tablaInvestigadores.querySelectorAll("tbody tr").forEach(r => r.style.backgroundColor = "");
 
-                        this.style.backgroundColor = "rgba(116, 198, 157, 0.15)";
+                        // Sombreado elegante
+                        this.style.backgroundColor = "rgba(39, 138, 95, 0.12)";
                         const idUser = this.querySelector(".id-user-oculto").innerText.trim();
                         const nombreCompleto = this.cells[1].innerText.trim();
 
                         hiddenUsuarioId.value = idUser;
                         infoSeleccion.innerHTML = `<strong>Seleccionado:</strong> ${nombreCompleto}`;
-                        infoSeleccion.style.color = "#2d6a4f";
+                        infoSeleccion.style.color = "#278a5f";
                     }
                 });
             });

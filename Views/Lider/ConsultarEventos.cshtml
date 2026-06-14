@@ -5,20 +5,66 @@
     string valor = ViewBag.ValorActual ?? "";
 }
 
-<div class="container-fluid">
-    <div class="row">
+<style>
+    /* Ajustes específicos para los botones de acción para mantener simetría */
+    .btn-action-custom {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
 
+    .btn-search-custom {
+        background-color: #278a5f;
+        color: white;
+        border: none;
+    }
+
+        .btn-search-custom:hover {
+            background-color: #1e6d4a;
+            color: white;
+            box-shadow: 0 4px 6px rgba(39, 138, 95, 0.3);
+        }
+
+    .btn-clear-custom {
+        background-color: transparent;
+        color: #6c757d;
+        border: 1px solid #6c757d;
+    }
+
+        .btn-clear-custom:hover {
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+</style>
+
+<div class="container-fluid">
+
+    <!-- 🌟 NUEVO ENCABEZADO SUPERIOR 🌟 -->
+    <div class="mb-4 mt-2">
+        <h3 class="fw-bold text-dark">
+            <i class="bi bi-calendar2-event me-2" style="color: #278a5f;"></i>Módulo de Consulta de Eventos
+        </h3>
+        <p class="text-muted small">Realice búsquedas específicas y visualice el cronograma institucional de ponencias y ferias.</p>
+    </div>
+
+    <div class="row">
         <div class="col-xl-4 col-lg-5 mb-4">
             <div class="dashboard-card" style="height: auto;">
-                <div class="card-title text-primary">
-                    <i class="bi bi-search me-2"></i>Búsqueda de Eventos
+                <div class="card-title text-dark">
+                    <i class="bi bi-search me-2" style="color: #278a5f;"></i>Búsqueda de Eventos
                 </div>
 
                 @using (Html.BeginForm("ConsultarEventos", "Lider", FormMethod.Get))
                 {
                     <div class="mb-4">
                         <label class="form-label small fw-bold text-muted">Por favor seleccione alguna de las siguientes opciones</label>
-                        <select name="criterioFiltro" class="form-control-custom" required>
+                        <select name="criterioFiltro" id="criterioFiltro" class="form-control-custom" required>
                             <option value="">Seleccione filtro...</option>
                             <option value="nombre" @(criterio == "nombre" ? "selected" : "")>Nombre del Evento</option>
                             <option value="semillero" @(criterio == "semillero" ? "selected" : "")>Nombre del Semillero</option>
@@ -28,25 +74,26 @@
 
                     <div class="mb-4">
                         <label class="form-label small fw-bold text-muted">Ahora ingrese la información que quiere buscar relacionado con la opción escogida</label>
-                        <input type="text" name="valorBusqueda" class="form-control-custom" value="@valor" placeholder="Escriba aquí su búsqueda..." required />
+                        <input type="text" name="valorBusqueda" id="valorBusqueda" class="form-control-custom" value="@valor" placeholder="Escriba aquí su búsqueda..." list="sugerenciasDinamicas" required autocomplete="off" />
+                        <datalist id="sugerenciasDinamicas"></datalist>
                     </div>
 
+                    <!-- Botones de Acción Simétricos -->
                     <div class="mb-3 d-flex flex-column gap-2">
-                        <button type="submit" class="btn-submit-gradient">
-                            <i class="bi bi-filter"></i><span>Buscar con filtro</span>
+                        <button type="submit" class="btn-action-custom btn-search-custom">
+                            <i class="bi bi-filter me-2"></i>Buscar con filtro
                         </button>
 
-                        <a href="@Url.Action("ConsultarEventos", "Lider")" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px;">
-                            <i class="bi bi-x-circle"></i> Limpiar filtros
+                        <a href="@Url.Action("ConsultarEventos", "Lider")" class="btn-action-custom btn-clear-custom text-decoration-none">
+                            <i class="bi bi-x-circle me-2"></i> Limpiar filtros
                         </a>
                     </div>
-
-                   
                 }
 
-                <div class="mt-4 p-3 bg-light rounded" style="border: 1px dashed #cad1d7;">
+                <!-- Mensaje de fecha (Oculto por defecto con d-none) -->
+                <div id="mensajeRecomendacionFecha" class="mt-4 p-3 bg-light rounded d-none" style="border: 1px dashed #cad1d7;">
                     <p class="small text-muted m-0 text-center fw-bold">
-                        <i class="bi bi-info-circle text-warning me-2"></i>Recomendación si es por fecha siga la siguiente estructura año-mes-día (AAAA-MM-DD)
+                        <i class="bi bi-info-circle text-warning me-2"></i>Recomendación: Si es por fecha, siga la estructura año-mes-día (AAAA-MM-DD)
                     </p>
                 </div>
             </div>
@@ -54,11 +101,12 @@
 
         <div class="col-xl-8 col-lg-7 mb-4">
             <div class="table-responsive-container" style="margin-top: 0;">
-                <div class="table-header-banner" style="background: linear-gradient(87deg, #11cdef 0, #1171ef 100%);">
+                <!-- Banner Verde Institucional -->
+                <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%);">
                     <i class="bi bi-calendar-event-fill me-2"></i>Cronograma institucional de Eventos y Ponencias
                 </div>
 
-                <table class="custom-table">
+                <table class="custom-table table-hover">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -77,12 +125,13 @@
                                     <td class="fw-bold">@ev.ID_evento</td>
                                     <td style="color: #32325d; font-weight: 600;">@ev.nombre_evento</td>
                                     <td>@ev.descripción_evento</td>
-                                    <td>
-                                        <span class="badge-time">
-                                            @(ev.fecha_evento != null ? ev.fecha_evento.ToString("dd/MM/yyyy") : "")
-                                        </span>
+
+                                    <!-- 🌟 AQUÍ SE QUITÓ EL COLOR VERDE DE LA FECHA 🌟 -->
+                                    <td class="text-dark fw-semibold">
+                                        @(ev.fecha_evento != null ? ev.fecha_evento.ToString("dd/MM/yyyy") : "")
                                     </td>
-                                    <td class="fw-bold text-info">@ev.nombre_semillero</td>
+
+                                    <td class="fw-bold" style="color: #278a5f;">@ev.nombre_semillero</td>
                                 </tr>
                             }
                         }
@@ -102,3 +151,60 @@
 
     </div>
 </div>
+
+<!-- 🌟 SCRIPT QUE SE ENCARGA DEL AUTOCOMPLETADO INTELIGENTE (TOP 5) Y LÓGICA VISUAL -->
+@section scripts {
+    <script>
+        const datosGlobalesEventos = [
+            @if(ViewBag.EventosResultado != null) {
+                foreach(dynamic ev in ViewBag.EventosResultado) {
+                    <text>{ nombre: '@ev.nombre_evento', semillero: '@ev.nombre_semillero', fecha: '@(ev.fecha_evento != null ? ev.fecha_evento.ToString("yyyy-MM-dd") : "")' },</text>
+                }
+            }
+        ];
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const selectFiltro = document.getElementById("criterioFiltro");
+            const datalist = document.getElementById("sugerenciasDinamicas");
+            const msjFecha = document.getElementById("mensajeRecomendacionFecha"); // Referencia al div del mensaje
+
+            function actualizarSugerencias() {
+                if(!selectFiltro || !datalist) return;
+
+                const filtroActivo = selectFiltro.value.toLowerCase();
+
+                // LÓGICA VISUAL: Mostrar u ocultar el mensaje de recomendación de fecha
+                if (filtroActivo === "fecha") {
+                    msjFecha.classList.remove("d-none"); // Lo muestra
+                } else {
+                    msjFecha.classList.add("d-none"); // Lo oculta
+                }
+
+                datalist.innerHTML = ""; // Limpiamos las opciones viejas
+                let opcionesBrutas = [];
+
+                if (filtroActivo === "nombre") {
+                    opcionesBrutas = datosGlobalesEventos.map(e => e.nombre);
+                } else if (filtroActivo === "semillero") {
+                    opcionesBrutas = datosGlobalesEventos.map(e => e.semillero);
+                } else if (filtroActivo === "fecha") {
+                    opcionesBrutas = datosGlobalesEventos.map(e => e.fecha);
+                }
+
+                const opcionesValidas = opcionesBrutas.filter(op => op && op.trim() !== "");
+                const top5Sugerencias = [...new Set(opcionesValidas)].slice(0, 5);
+
+                top5Sugerencias.forEach(op => {
+                    let optionElement = document.createElement("option");
+                    optionElement.value = op;
+                    datalist.appendChild(optionElement);
+                });
+            }
+
+            if(selectFiltro) {
+                selectFiltro.addEventListener("change", actualizarSugerencias);
+                actualizarSugerencias(); // Disparamos la función al iniciar
+            }
+        });
+    </script>
+}

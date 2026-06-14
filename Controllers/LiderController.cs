@@ -17,84 +17,272 @@ namespace GestionSemillero1.Controllers
         private DbSemillero db = new DbSemillero();
         private const string LAYOUT_PATH = "~/Views/Shared/_Layout.cshtml";
 
-        // GET: Lider/Index - Formulario principal de registro de reuniones
+        // =========================================================================
+        // 📅 VISTA PRINCIPAL: GESTIONAR REUNIONES
+        // =========================================================================
         public ActionResult Index()
-        {
-            if (Session["UsuarioLogueado"] == null || Session["TipoUsuario"]?.ToString().ToLower() != "lider")
-                return RedirectToAction("Login", "Account");
-
-            var listaInvestigadores = db.investigadores.ToList() ?? new List<investigadores>();
-            return View(listaInvestigadores);
-        }
-
-        [HttpPost]
-        public ActionResult AsignarReunion(string descripcion_reunion, string hora_reunion, string hora_fin_reunion,
-                                    string lugar_reunion, string fecha_reunion, decimal[] investigadoresSeleccionados)
         {
             if (Session["IDUsuario"] == null) return RedirectToAction("Login", "Account");
 
+            decimal idUsuarioActual = Convert.ToDecimal(Session["IDUsuario"]);
+
+            // 1. Obtener semillero
+            var idSemilleroLider = db.investigadores
+                                    .Where(i => i.ID_usuario == idUsuarioActual)
+                                    .Select(i => i.ID_semillero)
+                                    .FirstOrDefault();
+
+            // 2. Reuniones (vía ViewBag para no chocar con el modelo de investigadores)
+            ViewBag.ReunionesSemillero = (from r in db.Reunion
+                                          where r.ID_semillero == idSemilleroLider ||
+                                                db.AsistenciaReunion.Any(a => a.ID_reunion == r.ID_reunion && a.ID_usuario == idUsuarioActual)
+                                          select r).Distinct().ToList();
+
+            // 3. Investigadores (ESTE es el @model que la vista espera)
+            var listaInvestigadores = db.investigadores
+                                       .Where(i => i.ID_semillero == idSemilleroLider)
+                                       .ToList();
+
+            // RETORNO SEGURO: Si lista es null, enviamos una nueva lista vacía
+            return View(listaInvestigadores ?? new List<GestionSemillero1.Models.investigadores>());
+        }
+
+        // 🌟 NUEVO MÉTODO API: Devuelve los IDs de los usuarios que asisten a una reunión específica
+        [HttpGet]
+        public JsonResult ObtenerAsistentesReunion(decimal idReunion)
+        {
+            var asistentesIds = db.AsistenciaReunion
+                                  .Where(a => a.ID_reunion == idReunion)
+                                  .Select(a => a.ID_usuario.ToString())
+                                  .ToList();
+
+            return Json(asistentesIds, JsonRequestBehavior.AllowGet);
+        }
+
+        // =========================================================================
+        // 🔄 ACCIÓN UNIFICADA: CREAR O ACTUALIZAR REUNIÓN
+        // =========================================================================
+        [HttpPost]
+        public ActionResult ProcesarReunion(FormCollection form, decimal[] investigadoresSeleccionados)
+        {
+            if (Session["IDUsuario"] == null) return RedirectToAction("Login", "Account");
             decimal idLider = Convert.ToDecimal(Session["IDUsuario"]);
+
+            // Captura de datos del formulario de manera segura
+            string idRaw = form["ID_reunion"];
+            string descripcion_reunion = form["descripcion_reunion"];
+            string hora_reunion = form["hora_reunion"];
+            string hora_fin_reunion = form["hora_fin_reunion"];
+            string lugar_reunion = form["lugar_reunion"];
+            string fecha_reunion = form["fecha_reunion"];
+
+            DateTime fecha = DateTime.Parse(fecha_reunion);
+            TimeSpan hIni = TimeSpan.Parse(hora_reunion);
+            TimeSpan hFin = TimeSpan.Parse(hora_fin_reunion);
+
+            // 1. REGLA DE NEGOCIO: Validar Rango permitido obligatoriamente de 6 AM a 6 PM
+            TimeSpan limiteApertura = new TimeSpan(6, 0, 0);
+            TimeSpan limiteCierre = new TimeSpan(18, 0, 0);
+
+            if (hIni < limiteApertura || hIni > limiteCierre || hFin < limiteApertura || hFin > limiteCierre)
+            {
+                TempData["Error"] = "Operación Rechazada: El rango de horario permitido para comités es estrictamente de 06:00 AM a 06:00 PM.";
+                return RedirectToAction("Index");
+            }
 
             using (var transaccion = db.Database.BeginTransaction())
             {
                 try
                 {
-                    DateTime fecha = DateTime.Parse(fecha_reunion);
-                    decimal siguienteId = 5001;
-                    var maxId = db.Database.SqlQuery<decimal?>("SELECT MAX(ID_reunion) FROM reunion").FirstOrDefault();
-                    if (maxId.HasValue) siguienteId = maxId.Value + 1;
-
-                    // 1. Insertar la reunión
-                    string sqlReunion = "INSERT INTO reunion (ID_reunion, descripcion_reunion, hora_reunion, hora_fin_reunion, lugar_reunion, fecha_reunion, ID_semillero, estado_reunion) " +
-                                        "VALUES (@id, @desc, @hini, @hfin, @lug, @fec, 2001, 'Programada')";
-
-                    db.Database.ExecuteSqlCommand(sqlReunion,
-                        new System.Data.SqlClient.SqlParameter("@id", siguienteId),
-                        new System.Data.SqlClient.SqlParameter("@desc", descripcion_reunion),
-                        new System.Data.SqlClient.SqlParameter("@hini", hora_reunion),
-                        new System.Data.SqlClient.SqlParameter("@hfin", hora_fin_reunion),
-                        new System.Data.SqlClient.SqlParameter("@lug", lugar_reunion),
-                        new System.Data.SqlClient.SqlParameter("@fec", fecha));
-
-                    // 2. Insertar al Líder como asistente
-                    InsertarAsistencia(siguienteId, idLider);
-
-                    // 3. Insertar investigadores seleccionados (CORREGIDO PARA SEGURIDAD TOTAL)
-                    if (investigadoresSeleccionados != null)
+                    if (string.IsNullOrEmpty(idRaw))
                     {
-                        foreach (var idInv in investigadoresSeleccionados)
+                        // =========================================================
+                        // MODO: AGENDAR NUEVA REUNIÓN
+                        // =========================================================
+
+                        // 2. REGLA DE NEGOCIO: Validar disponibilidad de agenda de los participantes seleccionados
+                        if (investigadoresSeleccionados != null)
                         {
-                            // 1. Buscamos al investigador primero
-                            var inv = db.investigadores.FirstOrDefault(i => i.ID_investigador == idInv);
-
-                            if (inv != null)
+                            foreach (var idInv in investigadoresSeleccionados)
                             {
-                                // 2. BUSCAMOS EL ID_USUARIO REAL basado en el correo vinculado
-                                // Esto garantiza que estamos usando el ID que el usuario usa para loguearse
-                                var usuarioReal = db.Usuarios.FirstOrDefault(u => u.ID_usuario == inv.ID_usuario);
-
-                                if (usuarioReal != null && usuarioReal.ID_usuario != idLider)
+                                var inv = db.investigadores.FirstOrDefault(i => i.ID_investigador == idInv);
+                                if (inv != null)
                                 {
-                                    // 3. Insertamos el ID de usuario verificado
-                                    InsertarAsistencia(siguienteId, usuarioReal.ID_usuario);
+                                    // Traemos las reuniones que el usuario ya tenga agendadas ese mismo día a memoria para comparar limpiamente
+                                    var reunionesAsignadas = (from a in db.AsistenciaReunion
+                                                              join r in db.Reunion on a.ID_reunion equals r.ID_reunion
+                                                              where a.ID_usuario == inv.ID_usuario && r.fecha_reunion == fecha
+                                                              select r).ToList();
+
+                                    foreach (var r in reunionesAsignadas)
+                                    {
+                                        TimeSpan dbIni = TimeSpan.Parse(r.hora_reunion.ToString());
+                                        TimeSpan dbFin = TimeSpan.Parse(r.hora_fin_reunion.ToString());
+
+                                        // Verificamos si existe traslape de tiempos
+                                        if ((hIni >= dbIni && hIni < dbFin) || (hFin > dbIni && hFin <= dbFin) || (hIni <= dbIni && hFin >= dbFin))
+                                        {
+                                            throw new Exception($"El participante {inv.nombre_investigador} {inv.apellido_investigador} no está disponible. Ya se encuentra convocado a la reunión institucional '{r.descripcion_reunion}' en el horario de {dbIni.ToString(@"hh\:mm")} a {dbFin.ToString(@"hh\:mm")}.");
+                                        }
+                                    }
                                 }
                             }
                         }
+
+                        // Cálculo incremental del consecutivo de la llave primaria
+                        decimal siguienteId = 5001;
+                        var maxId = db.Database.SqlQuery<decimal?>("SELECT MAX(ID_reunion) FROM reunion").FirstOrDefault();
+                        if (maxId.HasValue) siguienteId = maxId.Value + 1;
+
+                        // Inserción física de la reunión usando SQL Nativo
+                        string sqlInsert = "INSERT INTO reunion (ID_reunion, descripcion_reunion, hora_reunion, hora_fin_reunion, lugar_reunion, fecha_reunion, ID_semillero, estado_reunion) " +
+                                           "VALUES (@id, @desc, @hini, @hfin, @lug, @fec, 2001, 'Programada')";
+
+                        db.Database.ExecuteSqlCommand(sqlInsert,
+                            new System.Data.SqlClient.SqlParameter("@id", siguienteId),
+                            new System.Data.SqlClient.SqlParameter("@desc", descripcion_reunion),
+                            new System.Data.SqlClient.SqlParameter("@hini", hora_reunion),
+                            new System.Data.SqlClient.SqlParameter("@hfin", hora_fin_reunion),
+                            new System.Data.SqlClient.SqlParameter("@lug", lugar_reunion),
+                            new System.Data.SqlClient.SqlParameter("@fec", fecha));
+
+                        // El Líder se auto-asigna al acta de forma automática
+                        InsertarAsistencia(siguienteId, idLider);
+
+                        // Registro estructurado de los investigadores vinculados
+                        if (investigadoresSeleccionados != null)
+                        {
+                            foreach (var idInv in investigadoresSeleccionados)
+                            {
+                                var inv = db.investigadores.FirstOrDefault(i => i.ID_investigador == idInv);
+                                if (inv != null)
+                                {
+                                    var usuarioReal = db.Usuarios.FirstOrDefault(u => u.ID_usuario == inv.ID_usuario);
+                                    if (usuarioReal != null && usuarioReal.ID_usuario != idLider)
+                                    {
+                                        InsertarAsistencia(siguienteId, usuarioReal.ID_usuario);
+                                    }
+                                }
+                            }
+                        }
+
+                        TempData["Success"] = "La reunión institucional ha sido agendada e integrada al calendario correctamente.";
+                    }
+                    else
+                    {
+                        // =========================================================
+                        // MODO: ACTUALIZAR REUNIÓN EXISTENTE
+                        // =========================================================
+                        decimal idModificar = Convert.ToDecimal(idRaw);
+                        var reunionExistente = db.Reunion.FirstOrDefault(r => r.ID_reunion == idModificar);
+
+                        if (reunionExistente == null) throw new Exception("El código de reunión no coincide con los registros.");
+
+                        // 3. REGLA DE NEGOCIO: Validar políticas de anticipación horaria y de fechas
+                        if (reunionExistente.fecha_reunion != fecha)
+                        {
+                            // Si altera la fecha, requiere mínimo 1 día (24 horas) completo de anticipación
+                            if ((reunionExistente.fecha_reunion - DateTime.Now.Date).TotalDays < 1)
+                            {
+                                throw new Exception("Seguridad de Agenda: Las modificaciones de fecha requieren un mínimo de 24 horas de anticipación.");
+                            }
+                        }
+
+                        TimeSpan dbHoraIni = TimeSpan.Parse(reunionExistente.hora_reunion.ToString());
+                        if (dbHoraIni != hIni)
+                        {
+                            // Si altera la hora, requiere mínimo 1 hora exacta de anticipación
+                            DateTime momentoReunionOriginal = reunionExistente.fecha_reunion.Add(dbHoraIni);
+                            if ((momentoReunionOriginal - DateTime.Now).TotalHours < 1)
+                            {
+                                throw new Exception("Seguridad de Agenda: Los cambios de horario sobre reuniones programadas exigen mínimo 1 hora de anticipación.");
+                            }
+                        }
+
+                        // Ejecutamos la actualización física
+                        string sqlUpdate = "UPDATE reunion SET descripcion_reunion=@desc, hora_reunion=@hini, hora_fin_reunion=@hfin, lugar_reunion=@lug, fecha_reunion=@fec WHERE ID_reunion=@id";
+                        db.Database.ExecuteSqlCommand(sqlUpdate,
+                            new System.Data.SqlClient.SqlParameter("@desc", descripcion_reunion),
+                            new System.Data.SqlClient.SqlParameter("@hini", hora_reunion),
+                            new System.Data.SqlClient.SqlParameter("@hfin", hora_fin_reunion),
+                            new System.Data.SqlClient.SqlParameter("@lug", lugar_reunion),
+                            new System.Data.SqlClient.SqlParameter("@fec", fecha),
+                            new System.Data.SqlClient.SqlParameter("@id", idModificar));
+
+                        // Actualización de participantes por reemplazo limpio de cascada manual
+                        string sqlClearAsistencias = "DELETE FROM asistencia_reunion WHERE ID_reunion=@id AND ID_usuario != @idLider";
+                        db.Database.ExecuteSqlCommand(sqlClearAsistencias,
+                            new System.Data.SqlClient.SqlParameter("@id", idModificar),
+                            new System.Data.SqlClient.SqlParameter("@idLider", idLider));
+
+                        if (investigadoresSeleccionados != null)
+                        {
+                            foreach (var idInv in investigadoresSeleccionados)
+                            {
+                                var inv = db.investigadores.FirstOrDefault(i => i.ID_investigador == idInv);
+                                if (inv != null)
+                                {
+                                    var usuarioReal = db.Usuarios.FirstOrDefault(u => u.ID_usuario == inv.ID_usuario);
+                                    if (usuarioReal != null && usuarioReal.ID_usuario != idLider)
+                                    {
+                                        InsertarAsistencia(idModificar, usuarioReal.ID_usuario);
+                                    }
+                                }
+                            }
+                        }
+
+                        TempData["Success"] = "Los detalles de la reunión han sido actualizados con éxito.";
                     }
 
                     transaccion.Commit();
-                    TempData["Success"] = "Reunión #" + siguienteId + " creada con éxito.";
                 }
                 catch (Exception ex)
                 {
                     transaccion.Rollback();
-                    TempData["Error"] = "Error al guardar: " + ex.Message;
+                    TempData["Error"] = ex.Message;
                 }
             }
+
             return RedirectToAction("Index");
         }
 
-        // Método simplificado para evitar errores de conexión
+        // =========================================================================
+        // 🗑️ ACCIÓN: ELIMINAR REUNIÓN FÍSICAMENTE
+        // =========================================================================
+        [HttpPost]
+        public ActionResult EliminarReunion(FormCollection form)
+        {
+            string idRaw = form["ID_reunion"];
+            if (string.IsNullOrEmpty(idRaw)) return RedirectToAction("Index");
+
+            decimal idEliminar = Convert.ToDecimal(idRaw);
+
+            using (var transaccion = db.Database.BeginTransaction())
+            {
+                try
+                {
+                    // 1. Limpiamos las dependencias asociativas de la tabla puente (Evita violaciones de integridad referencial)
+                    string sqlAsistencias = "DELETE FROM asistencia_reunion WHERE ID_reunion = @id";
+                    db.Database.ExecuteSqlCommand(sqlAsistencias, new System.Data.SqlClient.SqlParameter("@id", idEliminar));
+
+                    // 2. Removemos el registro físico de la tabla reunión
+                    string sqlReunion = "DELETE FROM reunion WHERE ID_reunion = @id";
+                    db.Database.ExecuteSqlCommand(sqlReunion, new System.Data.SqlClient.SqlParameter("@id", idEliminar));
+
+                    transaccion.Commit();
+                    TempData["Success"] = "La reunión ha sido removida permanentemente del sistema institucional.";
+                }
+                catch (Exception ex)
+                {
+                    transaccion.Rollback();
+                    TempData["Error"] = "Error de Base de Datos al eliminar: " + ex.Message;
+                }
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        // Helper interno parametrizado para registrar las asistencias asociadas
         private void InsertarAsistencia(decimal idR, decimal idU)
         {
             string sql = "INSERT INTO asistencia_reunion (ID_reunion, ID_usuario) VALUES (@idR, @idU)";
@@ -102,30 +290,73 @@ namespace GestionSemillero1.Controllers
                 new System.Data.SqlClient.SqlParameter("@idR", idR),
                 new System.Data.SqlClient.SqlParameter("@idU", idU));
         }
-
         // GET: Lider/ConsultarReuniones
         public ActionResult ConsultarReuniones(string criterio, string valor)
         {
-            if (Session["UsuarioLogueado"] == null || Session["IDUsuario"] == null)
-                return RedirectToAction("Login", "Account");
+            // Validación de seguridad de la sesión
+            if (Session["IDUsuario"] == null) return RedirectToAction("Login", "Account");
 
             decimal idUsuarioActual = Convert.ToDecimal(Session["IDUsuario"]);
 
-            // Obtener IDs de reuniones donde el usuario es participante
-            var idsMisReuniones = db.AsistenciaReunion
-                                    .Where(a => a.ID_usuario == idUsuarioActual)
-                                    .Select(a => a.ID_reunion)
-                                    .ToList();
+            // 1. Encontrar el ID_semillero al que pertenece/lidera el usuario actual
+            var idSemilleroLider = db.investigadores
+                                    .Where(i => i.ID_usuario == idUsuarioActual)
+                                    .Select(i => i.ID_semillero)
+                                    .FirstOrDefault();
 
-            var reuniones = db.Reunion.Where(r => idsMisReuniones.Contains(r.ID_reunion)).AsQueryable();
+            // VALIDACIÓN DE SEGURIDAD: Si el usuario no tiene semillero asignado en investigadores, protegemos la vista
+            if (idSemilleroLider == 0)
+            {
+                ViewBag.TopIDs = new List<string>();
+                ViewBag.TopFechas = new List<string>();
+                return View(new List<Reunion>());
+            }
 
-            // Lógica de filtros
+            // 🌟 REGLA MAESTRA INTEGRADA PERFECTAMENTE: 
+            // Trae las reuniones de su propio semillero OR donde el líder aparezca en la lista de asistencia
+            var queryBase = (from r in db.Reunion
+                             where r.ID_semillero == idSemilleroLider ||
+                                   db.AsistenciaReunion.Any(a => a.ID_reunion == r.ID_reunion && a.ID_usuario == idUsuarioActual)
+                             select r).Distinct();
+
+            // 2. Cargar las 5 sugerencias del autocompletado basadas en este nuevo universo autorizado
+            ViewBag.TopIDs = queryBase.Select(r => r.ID_reunion.ToString())
+                                       .Distinct()
+                                       .Take(5)
+                                       .ToList();
+
+            var fechasRaw = queryBase.Select(r => r.fecha_reunion)
+                                     .Distinct()
+                                     .Take(5)
+                                     .ToList();
+
+            // 🌟 CORRECCIÓN AQUÍ: Se añade .AsEnumerable() para que el formato de fecha se procese en memoria y no rompa SQL
+            ViewBag.TopFechas = fechasRaw
+                                .AsEnumerable()
+                                .Select(f => f.ToString("dd/MM/yyyy"))
+                                .Where(x => !string.IsNullOrEmpty(x))
+                                .ToList();
+
+            // 3. Aplicar filtros de búsqueda por ID o Fecha elegidos por el usuario
+            var reuniones = queryBase.AsQueryable();
+
             if (!string.IsNullOrWhiteSpace(valor))
             {
                 if (criterio == "ID" && decimal.TryParse(valor, out decimal id))
+                {
                     reuniones = reuniones.Where(r => r.ID_reunion == id);
-                else if (criterio == "Fecha" && DateTime.TryParse(valor, out DateTime fecha))
-                    reuniones = reuniones.Where(r => r.fecha_reunion == fecha);
+                }
+                else if (criterio == "Fecha")
+                {
+                    if (DateTime.TryParseExact(valor, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime fechaExacta))
+                    {
+                        reuniones = reuniones.Where(r => r.fecha_reunion == fechaExacta);
+                    }
+                    else if (DateTime.TryParse(valor, out DateTime fecha))
+                    {
+                        reuniones = reuniones.Where(r => r.fecha_reunion == fecha);
+                    }
+                }
             }
 
             return View(reuniones.ToList());
