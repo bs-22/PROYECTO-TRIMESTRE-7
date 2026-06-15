@@ -5,13 +5,28 @@
 }
 
 <style>
-    /* Forzar el color verde institucional en la pestaña activa */
+
+    /* Estilo para todas las celdas de las tablas, obligando a color negro */
+    .table-text-black td, .table-text-black td span {
+        color: #000000 !important;
+        text-decoration: none !important;
+        font-weight: 500 !important;
+    }
+
+    /* Para asegurar que no haya sombras ni efectos raros */
+    .table-text-black td {
+        text-shadow: none !important;
+        background-color: transparent !important;
+    }
+
+    /* Tu estilo existente para pestañas activas */
     .nav-tabs-custom .nav-link-tab.active {
         background: #278a5f !important;
         background-color: #278a5f !important;
         color: #ffffff !important;
         box-shadow: 0 4px 6px rgba(39, 138, 95, 0.3) !important;
     }
+
 </style>
 
 <div class="container-fluid">
@@ -100,51 +115,42 @@
                     </button>
                 </div>
             }
-            <div class="table-responsive-container">
-                <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;"><i class="bi bi-folder text-white me-2"></i>Proyectos de Investigación Activos</div>
-                <table class="custom-table table-hover" id="tablaProyectosRaw">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre Proyecto</th>
-                            <th>Línea Enfoque</th>
-                            <th>Inicio</th>
-                            <th>Fin</th>
-                            <th class="text-center">Info</th>
-                            <th style="display:none;">SemId</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (ViewBag.ListaProyectos != null)
+        <div class="table-responsive-container">
+            <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;"><i class="bi bi-folder text-white me-2"></i>Proyectos de Investigación Activos</div>
+            <table class="custom-table table-hover table-text-black" id="tablaProyectosRaw">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre Proyecto</th>
+                        <th>Línea Enfoque</th>
+                        <th>Inicio</th>
+                        <th>Fin</th>
+                        <th class="text-center">Info</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (ViewBag.ListaProyectos != null)
+                    {
+                        foreach (var proj in ViewBag.ListaProyectos)
                         {
-                            foreach (var proj in ViewBag.ListaProyectos)
-                            {
-                                <tr style="cursor: pointer;" title="Haga clic para editar en el formulario">
-                                    <td class="fw-bold id-p-cell">@proj.ID_proyecto</td>
-                                    <td style="color:#32325d; font-weight:600;">@proj.nombre_proyecto</td>
-                                    <td>@proj.actividad_proyecto</td>
-                                    <td>@proj.fecha_inicio_proyecto.ToString("yyyy-MM-dd")</td>
-                                    <td>@proj.fecha_fin_proyecto.ToString("yyyy-MM-dd")</td>
-
-                                    <td class="text-center">
-                                        <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
-                                                onclick="verFichaTecnicaProyecto(event, this)"
-                                                data-id="@proj.ID_proyecto"
-                                                data-nombre="@proj.nombre_proyecto"
-                                                data-actividad="@proj.actividad_proyecto"
-                                                data-inicio='@proj.fecha_inicio_proyecto.ToString("dd/MM/yyyy")'
-                                                data-fin='@proj.fecha_fin_proyecto.ToString("dd/MM/yyyy")'>
-                                            <i class="bi bi-exclamation-circle-fill fs-5" title="Ver hoja de detalles del proyecto"></i>
-                                        </button>
-                                    </td>
-
-                                    <td style="display:none;" class="sem-p-oculto">@proj.ID_semillero</td>
-                                </tr>
-                            }
+                            <tr style="cursor: pointer;" title="Haga clic para editar en el formulario">
+                                <td class="fw-bold id-p-cell">@proj.ID_proyecto</td>
+                                <td style="font-weight:600;">@proj.nombre_proyecto</td>
+                                <td>@proj.actividad_proyecto</td>
+                                <td><span class="date-text-clean">@proj.fecha_inicio_proyecto.ToString("yyyy-MM-dd")</span></td>
+                                <td><span class="date-text-clean">@proj.fecha_fin_proyecto.ToString("yyyy-MM-dd")</span></td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;" onclick="verFichaTecnicaProyecto(event, this)" data-id="@proj.ID_proyecto" data-nombre="@proj.nombre_proyecto" data-actividad="@proj.actividad_proyecto" data-inicio='@proj.fecha_inicio_proyecto.ToString("dd/MM/yyyy")' data-fin='@proj.fecha_fin_proyecto.ToString("dd/MM/yyyy")'>
+                                        <i class="bi bi-exclamation-circle-fill fs-5"></i>
+                                    </button>
+                                </td>
+                                <td style="display:none;" class="sem-p-oculto">@proj.ID_semillero</td>
+                            </tr>
                         }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                </tbody>
+            </table>
+        </div>
         </div>
 
         <!-- ================= PESTAÑA B: FASES ================= -->
@@ -189,45 +195,39 @@
                     </button>
                 </div>
             }
-            <div class="table-responsive-container">
-                <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;"><i class="bi bi-layers-half text-white me-2"></i>Fases Registradas por Proyecto</div>
-                <table class="custom-table table-hover" id="tablaFasesRaw">
-                    <thead>
-                        <tr>
-                            <th>ID Fase</th>
-                            <th>Nombre Fase</th>
-                            <th>Descripción</th>
-                            <th>Proyecto Padre</th>
-                            <th class="text-center">Info</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (ViewBag.ListaFases != null)
+        <div class="table-responsive-container">
+            <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;"><i class="bi bi-layers-half text-white me-2"></i>Fases Registradas por Proyecto</div>
+            <table class="custom-table table-hover table-text-black" id="tablaFasesRaw">
+                <thead>
+                    <tr>
+                        <th>ID Fase</th>
+                        <th>Nombre Fase</th>
+                        <th>Descripción</th>
+                        <th>Proyecto Padre</th>
+                        <th class="text-center">Info</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (ViewBag.ListaFases != null)
+                    {
+                        foreach (dynamic fase in ViewBag.ListaFases)
                         {
-                            foreach (dynamic fase in ViewBag.ListaFases)
-                            {
-                                <tr style="cursor: pointer;" title="Haga clic para editar">
-                                    <td class="fw-bold id-f-cell">@fase.ID_fase_proyecto</td>
-                                    <td style="color:#32325d; font-weight:600;">@fase.nombre_fase_proyecto</td>
-                                    <td class="text-truncate" style="max-width: 250px;">@fase.descripcion_fase_proyecto</td>
-                                    <td>@fase.nombre_proyecto</td>
-
-                                    <td class="text-center">
-                                        <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
-                                                onclick="verFichaTecnicaFase(event, this)"
-                                                data-id="@fase.ID_fase_proyecto"
-                                                data-nombre="@fase.nombre_fase_proyecto"
-                                                data-descripcion="@fase.descripcion_fase_proyecto"
-                                                data-proyecto="@fase.nombre_proyecto">
-                                            <i class="bi bi-exclamation-circle-fill fs-5" title="Ver hoja de detalles de la fase"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
+                            <tr style="cursor: pointer;" title="Haga clic para editar">
+                                <td class="fw-bold id-f-cell">@fase.ID_fase_proyecto</td>
+                                <td style="font-weight:600;">@fase.nombre_fase_proyecto</td>
+                                <td class="text-truncate" style="max-width: 250px;">@fase.descripcion_fase_proyecto</td>
+                                <td>@fase.nombre_proyecto</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;" onclick="verFichaTecnicaFase(event, this)" data-id="@fase.ID_fase_proyecto" data-nombre="@fase.nombre_fase_proyecto" data-descripcion="@fase.descripcion_fase_proyecto" data-proyecto="@fase.nombre_proyecto">
+                                        <i class="bi bi-exclamation-circle-fill fs-5"></i>
+                                    </button>
+                                </td>
+                            </tr>
                         }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                </tbody>
+            </table>
+        </div>
         </div>
 
         <!-- ================= PESTAÑA C: ACTIVIDADES ================= -->
@@ -287,56 +287,59 @@
                     </button>
                 </div>
             }
-            <div class="table-responsive-container">
-                <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;"><i class="bi bi-check2-square text-white me-2"></i>Cronograma de Actividades Generales</div>
-                <table class="custom-table table-hover" id="tablaActividadesRaw">
-                    <thead>
-                        <tr>
-                            <th>ID Act.</th>
-                            <th>Nombre Actividad</th>
-                            <th>Detalle</th>
-                            <th>Inicio</th>
-                            <th>Fin</th>
-                            <th>Fase Vinculada</th>
-                            <th class="text-center">Info</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (ViewBag.ListaActividades != null)
-                        {
-                            foreach (dynamic act in ViewBag.ListaActividades)
-                            {
-                                string estadoAct = "En curso";
-                                if (act.fecha_fin_actividad_proyecto.Date < DateTime.Today) { estadoAct = "Finalizada"; }
-                                else if (act.fecha_inicio_actividad_proyecto.Date > DateTime.Today) { estadoAct = "Programada"; }
-
-                                <tr style="cursor: pointer;" title="Haga clic para editar">
-                                    <td class="fw-bold id-a-cell">@act.ID_activida_proyecto</td>
-                                    <td style="color:#32325d; font-weight:600;">@act.nombre_actividad_proyecto</td>
-                                    <td class="text-truncate" style="max-width: 200px;">@act.descripcion_actividad_proyecto</td>
-                                    <td><span class="badge-time">@act.fecha_inicio_actividad_proyecto.ToString("dd/MM/yyyy")</span></td>
-                                    <td><span class="badge-time" style="background-color:#fff3cd; color:#856404;">@act.fecha_fin_actividad_proyecto.ToString("dd/MM/yyyy")</span></td>
-                                    <td>@act.nombre_fase_proyecto</td>
-
-                                    <td class="text-center">
-                                        <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
-                                                onclick="verFichaTecnicaActividad(event, this)"
-                                                data-id="@act.ID_activida_proyecto"
-                                                data-nombre="@act.nombre_actividad_proyecto"
-                                                data-descripcion="@act.descripcion_actividad_proyecto"
-                                                data-inicio='@act.fecha_inicio_actividad_proyecto.ToString("dd/MM/yyyy")'
-                                                data-fin='@act.fecha_fin_actividad_proyecto.ToString("dd/MM/yyyy")'
-                                                data-fase="@act.nombre_fase_proyecto"
-                                                data-estado="@estadoAct">
-                                            <i class="bi bi-exclamation-circle-fill fs-5" title="Ver hoja de detalles de la actividad"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
+        <div class="table-responsive-container">
+            <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;">
+                <i class="bi bi-check2-square text-white me-2"></i>Cronograma de Actividades Generales
             </div>
+
+            <table class="custom-table table-hover table-text-black" id="tablaActividadesRaw">
+                <thead>
+                    <tr>
+                        <th>ID Act.</th>
+                        <th>Nombre Actividad</th>
+                        <th>Detalle</th>
+                        <th>Inicio</th>
+                        <th>Fin</th>
+                        <th>Fase Vinculada</th>
+                        <th class="text-center">Info</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (ViewBag.ListaActividades != null)
+                    {
+                        foreach (dynamic act in ViewBag.ListaActividades)
+                        {
+                            string estadoAct = "En curso";
+                            if (act.fecha_fin_actividad_proyecto.Date < DateTime.Today) { estadoAct = "Finalizada"; }
+                            else if (act.fecha_inicio_actividad_proyecto.Date > DateTime.Today) { estadoAct = "Programada"; }
+
+                            <tr style="cursor: pointer;" title="Haga clic para editar">
+                                <td class="fw-bold id-a-cell">@act.ID_activida_proyecto</td>
+                                <td style="font-weight:600;">@act.nombre_actividad_proyecto</td>
+                                <td class="text-truncate" style="max-width: 200px;">@act.descripcion_actividad_proyecto</td>
+                                <td><span class="date-text-clean">@act.fecha_inicio_actividad_proyecto.ToString("dd/MM/yyyy")</span></td>
+                                <td><span class="date-text-clean">@act.fecha_fin_actividad_proyecto.ToString("dd/MM/yyyy")</span></td>
+                                <td>@act.nombre_fase_proyecto</td>
+
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
+                                            onclick="verFichaTecnicaActividad(event, this)"
+                                            data-id="@act.ID_activida_proyecto"
+                                            data-nombre="@act.nombre_actividad_proyecto"
+                                            data-descripcion="@act.descripcion_actividad_proyecto"
+                                            data-inicio='@act.fecha_inicio_actividad_proyecto.ToString("dd/MM/yyyy")'
+                                            data-fin='@act.fecha_fin_actividad_proyecto.ToString("dd/MM/yyyy")'
+                                            data-fase="@act.nombre_fase_proyecto"
+                                            data-estado="@estadoAct">
+                                        <i class="bi bi-exclamation-circle-fill fs-5" title="Ver hoja de detalles de la actividad"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
         </div>
 
     </div>

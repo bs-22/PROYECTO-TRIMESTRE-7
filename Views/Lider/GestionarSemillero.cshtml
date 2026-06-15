@@ -8,7 +8,6 @@
 }
 
 <style>
-    /* Estilos para mantener consistencia con los botones de filtros */
     .btn-action-custom {
         display: flex;
         justify-content: center;
@@ -21,30 +20,6 @@
         transition: all 0.3s ease;
     }
 
-    .btn-search-custom {
-        background-color: #278a5f;
-        color: white;
-        border: none;
-    }
-
-        .btn-search-custom:hover {
-            background-color: #1e6d4a;
-            color: white;
-            box-shadow: 0 4px 6px rgba(39, 138, 95, 0.3);
-        }
-
-    .btn-clear-custom {
-        background-color: transparent;
-        color: #6c757d;
-        border: 1px solid #6c757d;
-    }
-
-        .btn-clear-custom:hover {
-            background-color: #f8f9fa;
-            color: #343a40;
-        }
-
-    /* Banners de tabla */
     .table-header-banner {
         padding: 15px;
         font-weight: 600;
@@ -54,9 +29,8 @@
         border-radius: .5rem .5rem 0 0;
     }
 
-    /* Pestañas (eliminar subrayado azul, letra negra, fondo verde al activarse) */
     .nav-tabs .nav-link {
-        color: #333333 !important; /* Letra negra/oscura */
+        color: #333333 !important;
         border: none !important;
         text-decoration: none !important;
     }
@@ -66,16 +40,40 @@
             color: #ffffff !important;
             box-shadow: 0 4px 6px rgba(39, 138, 95, 0.3);
         }
+
+    .form-control-custom {
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        padding: 0.5rem 0.75rem;
+        width: 100%;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+        .form-control-custom:focus {
+            border-color: #278a5f;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(39, 138, 95, 0.25);
+        }
+
+    .step-badge {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        text-align: center;
+        line-height: 24px;
+        border-radius: 50%;
+        font-size: 0.85rem;
+        margin-right: 8px;
+    }
 </style>
 
 <div class="container-fluid">
 
     <div class="mb-4 mt-2">
         <h3 class="fw-bold text-dark">
-            <!-- Ícono de personas/usuario con el color verde institucional -->
             <i class="bi bi-people-fill me-2" style="color: #278a5f;"></i>Módulo de Gestión de Semilleros
         </h3>
-        <p class="text-muted small">Administre la información de los semilleros, asigne investigadores y filtre datos registrados.</p>
+        <p class="text-muted small">Administre la información de los semilleros y gestione a los investigadores vinculados.</p>
     </div>
 
     @if (TempData["Error"] != null)
@@ -87,67 +85,13 @@
     }
 
     <div class="row">
-        <div class="col-xl-3 col-lg-4 mb-4">
-            <div class="dashboard-card shadow-sm h-100">
-                <div class="card-title text-dark mb-4">
-                    <i class="bi bi-search me-2" style="color: #278a5f;"></i>Búsqueda General
-                </div>
+        <!-- Contenedor principal al 100% -->
+        <div class="col-12">
 
-                @using (Html.BeginForm("GestionarSemillero", "Lider", FormMethod.Get))
-                {
-                    <input type="hidden" name="seccionCargada" value="filtros" />
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Filtrar por Semillero</label>
-                        <select name="semilleroFiltro" class="form-control-custom">
-                            <option value="">Todos los semilleros...</option>
-                            @if (ViewBag.SemillerosFiltro != null)
-                            {
-                                foreach (var s in ViewBag.SemillerosFiltro as List<GestionSemillero1.Models.semillero>)
-                                {
-                                    <option value="@s.ID_semillero">@s.nombre_semillero</option>
-                                }
-                            }
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Línea de Investigación</label>
-                        <select name="lineaFiltro" class="form-control-custom">
-                            <option value="">Todas las líneas...</option>
-                            @if (ViewBag.LineasFiltro != null)
-                            {
-                                foreach (var linea in ViewBag.LineasFiltro as List<string>)
-                                {
-                                    <option value="@linea">@linea</option>
-                                }
-                            }
-                        </select>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted">Fecha de Creación</label>
-                        <input type="date" name="fechaFiltro" class="form-control-custom" value="2026-06-06" />
-                    </div>
-
-                    <div class="mb-3 d-flex flex-column gap-2">
-                        <button type="submit" class="btn-action-custom btn-search-custom">
-                            <i class="bi bi-filter me-2"></i>Buscar con filtro
-                        </button>
-
-                        <a href="@Url.Action("GestionarSemillero", "Lider")" class="btn-action-custom btn-clear-custom text-decoration-none">
-                            <i class="bi bi-x-circle me-2"></i> Limpiar filtros
-                        </a>
-                    </div>
-                }
-            </div>
-        </div>
-
-        <div class="col-xl-9 col-lg-8">
-
+            <!-- Pestañas de Navegación -->
             <ul class="nav nav-tabs border-0 mb-4 bg-white p-2 shadow-sm" style="border-radius: 12px; gap: 10px;">
                 <li class="nav-item">
-                    <button class="nav-link border-0 fw-bold px-4 py-2 @(seccionActiva != "investigadores" && seccionActiva != "filtros" ? "active" : "")"
+                    <button class="nav-link border-0 fw-bold px-4 py-2 @(seccionActiva != "investigadores" ? "active" : "")"
                             id="btn-tab-semilleros" onclick="cambiarVistaPestaña('semilleros')" style="border-radius: 8px; transition: all 0.2s;">
                         <i class="bi bi-building me-2"></i>Gestión de Semilleros
                     </button>
@@ -158,28 +102,21 @@
                         <i class="bi bi-people-fill me-2"></i>Gestión de Investigadores
                     </button>
                 </li>
-                @if (seccionActiva == "filtros")
-                {
-                    <li class="nav-item ms-auto">
-                        <span class="badge text-white p-2 fw-bold" style="background-color: #278a5f; border-radius: 8px;">
-                            <i class="bi bi-funnel me-1"></i> Viendo Resultados Filtrados
-                        </span>
-                    </li>
-                }
             </ul>
 
             <div class="tab-content">
 
-                <div class="tab-pane fade @(seccionActiva != "investigadores" && seccionActiva != "filtros" ? "show active" : "")">
+                <!-- PESTAÑA 1: GESTIÓN DE SEMILLEROS -->
+                <div class="tab-pane fade @(seccionActiva != "investigadores" ? "show active" : "")">
 
                     @using (Html.BeginForm("GestionarSemillero", "Lider", FormMethod.Post, new { id = "formSemillero" }))
                     {
                         <div class="row">
                             <div class="col-md-6 mb-4">
-                                <div class="dashboard-card h-100 shadow-sm">
-                                    <h5 class="card-title mb-3"><span class="step-badge text-white" style="background-color: #278a5f;">1</span> Identificación</h5>
+                                <div class="card h-100 shadow-sm border-0 p-3">
+                                    <h5 class="card-title mb-3 fw-bold"><span class="step-badge text-white" style="background-color: #278a5f;">1</span> Identificación</h5>
                                     <div class="mb-3">
-                                        <input type="text" id="txtID" name="ID_semillero" class="form-control-custom" value="@ViewBag.SiguienteID" readonly style="background-color: #f8f9fa; cursor: not-allowed;" required />
+                                        <input type="text" id="txtID" name="ID_semillero" class="form-control-custom" readonly style="background-color: #f8f9fa; cursor: not-allowed;" required placeholder="ID asignado" />
                                     </div>
                                     <div>
                                         <input type="text" id="txtNombre" name="nombre_semillero" class="form-control-custom" placeholder="Nombre del semillero" required />
@@ -188,8 +125,8 @@
                             </div>
 
                             <div class="col-md-6 mb-4">
-                                <div class="dashboard-card h-100 shadow-sm">
-                                    <h5 class="card-title mb-3"><span class="step-badge text-white" style="background-color: #278a5f;">2</span> Clasificación</h5>
+                                <div class="card h-100 shadow-sm border-0 p-3">
+                                    <h5 class="card-title mb-3 fw-bold"><span class="step-badge text-white" style="background-color: #278a5f;">2</span> Clasificación</h5>
                                     <div class="mb-3">
                                         <input type="text" id="txtLinea" name="linea_investigacion" class="form-control-custom" placeholder="Línea de investigación" required />
                                     </div>
@@ -200,16 +137,15 @@
                             </div>
                         </div>
 
-                        <div class="dashboard-card mb-4 shadow-sm">
-                            <h5 class="card-title mb-3"><span class="step-badge text-white" style="background-color: #278a5f;">3</span> Descripción General</h5>
+                        <div class="card mb-4 shadow-sm border-0 p-3">
+                            <h5 class="card-title mb-3 fw-bold"><span class="step-badge text-white" style="background-color: #278a5f;">3</span> Descripción General</h5>
                             <textarea id="txtDescripcion" name="descripcion_semillero" class="form-control-custom" rows="3" placeholder="Escriba la descripción del semillero..."></textarea>
                         </div>
 
                         <div class="d-flex flex-wrap gap-2 mb-4">
-                            <button type="submit" name="accion" value="agregar" class="btn text-white px-4" style="background-color: #278a5f; border-radius: 8px;"><i class="bi bi-plus-circle me-2"></i>Agregar</button>
-                            <button type="submit" name="accion" value="actualizar" class="btn text-white px-4" style="background-color: #c98d26; border-radius: 8px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
-                            <button type="submit" name="accion" value="eliminar" class="btn text-white px-4" style="background-color: #d42346; border-radius: 8px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
-                            <button type="button" id="btnLimpiar" class="btn btn-secondary text-white px-4" style="border-radius: 8px;"><i class="bi bi-eraser me-2"></i>Limpiar</button>
+                            <button type="submit" name="accion" value="actualizar" class="btn text-white px-4 fw-bold" style="background-color: #c98d26; border-radius: 8px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
+                            <button type="submit" name="accion" value="eliminar" class="btn text-white px-4 fw-bold" style="background-color: #d42346; border-radius: 8px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
+                            <button type="button" id="btnLimpiar" class="btn btn-secondary text-white px-4 fw-bold" style="border-radius: 8px;"><i class="bi bi-eraser me-2"></i>Limpiar</button>
                         </div>
                     }
 
@@ -231,15 +167,26 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var item in Model)
+                                    @if (Model != null && Model.Any())
+                                    {
+                                        foreach (var item in Model)
+                                        {
+                                            <tr>
+                                                <td class="fw-bold ID-celda">@item.ID_semillero</td>
+                                                <td style="color: #32325d; font-weight: 600;">@item.nombre_semillero</td>
+                                                <td>@(item.fecha_creacion_semillero != null ? item.fecha_creacion_semillero.ToString("yyyy-MM-dd") : "")</td>
+                                                <td>@item.linea_investigacion</td>
+                                                <td><span class="badge text-white p-2" style="background-color: #278a5f; border-radius:6px;">@item.estado</span></td>
+                                                <td style="display:none;" class="descripcion-oculta">@item.descripcion_semillero</td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
                                     {
                                         <tr>
-                                            <td class="fw-bold ID-celda">@item.ID_semillero</td>
-                                            <td style="color: #32325d; font-weight: 600;">@item.nombre_semillero</td>
-                                            <td>@(item.fecha_creacion_semillero != null ? item.fecha_creacion_semillero.ToString("yyyy-MM-dd") : "")</td>
-                                            <td>@item.linea_investigacion</td>
-                                            <td><span class="badge text-white p-2" style="background-color: #278a5f; border-radius:6px;">@item.estado</span></td>
-                                            <td style="display:none;" class="descripcion-oculta">@item.descripcion_semillero</td>
+                                            <td colspan="6" class="text-center p-4 text-muted">
+                                                <i class="bi bi-info-circle me-2"></i> Aún no tienes semilleros asignados. Contacta al Administrador.
+                                            </td>
                                         </tr>
                                     }
                                 </tbody>
@@ -249,53 +196,23 @@
 
                 </div>
 
+                <!-- PESTAÑA 2: GESTIÓN DE INVESTIGADORES -->
                 <div class="tab-pane fade @(seccionActiva == "investigadores" ? "show active" : "")">
+
                     <div class="row">
-                        <div class="col-lg-4 mb-4">
-                            <div class="dashboard-card shadow-sm h-100">
-                                <h5 class="card-title mb-3" style="color: #278a5f;"><i class="bi bi-gear-fill me-2"></i>Acciones de Asignación</h5>
-
-                                @using (Html.BeginForm("ProcesarAccionesInvestigadores", "Lider", FormMethod.Post, new { id = "formAccionesInvestigadores" }))
-                                {
-                                    <input type="hidden" id="hiddenSemilleroId" name="idSemilleroSeleccionado" value="@idSemilleroSeleccionadoSeccion4" />
-                                    <input type="hidden" id="hiddenUsuarioId" name="idUsuarioSeleccionado" value="" />
-                                    <input type="hidden" id="hiddenAccionInv" name="accionInvestigador" value="" />
-
-                                    <div class="mb-4">
-                                        <label class="form-label small fw-bold text-muted">Semillero a Consultar</label>
-                                        <select id="comboSemilleroSeccion4" class="form-control-custom" onchange="cambiarSemilleroSeccion4(this.value)" style="border-color: #278a5f;">
-                                            <option value="">Seleccione un semillero de origen...</option>
-                                            @if (ViewBag.SemillerosFiltro != null)
-                                            {
-                                                foreach (var s in ViewBag.SemillerosFiltro as List<GestionSemillero1.Models.semillero>)
-                                                {
-                                                    <option value="@s.ID_semillero" @(idSemilleroSeleccionadoSeccion4 == s.ID_semillero ? "selected" : "")>@s.nombre_semillero</option>
-                                                }
-                                            }
-                                        </select>
-                                    </div>
-
-                                    <div class="d-flex flex-column gap-2">
-                                        <button type="button" onclick="ejecutarAccionInvestigador('habilitar')" class="btn btn-light text-start border-0 p-3" style="border-radius: 8px; font-weight: 500;"><i class="bi bi-person-check me-3" style="color: #278a5f;"></i>Habilitar Investigador</button>
-                                        <button type="button" onclick="ejecutarAccionInvestigador('deshabilitar')" class="btn btn-light text-start border-0 p-3" style="border-radius: 8px; font-weight: 500;"><i class="bi bi-person-x text-warning me-3"></i>Deshabilitar Investigador</button>
-                                        <button type="button" onclick="ejecutarAccionInvestigador('eliminar')" class="btn btn-outline-danger text-start p-3" style="border-radius: 8px; font-weight: 500;"><i class="bi bi-trash me-3"></i>Eliminar de este Semillero</button>
-
-                                        <button type="button" id="btnAbrirModalAgregar" class="btn text-white text-center mt-3 py-2 fw-bold" style="background-color: #278a5f; border-radius: 8px;"><i class="bi bi-person-plus-fill me-2"></i>Agregar Investigador</button>
-                                    </div>
-                                }
-
-                                <div class="mt-4 p-3 bg-light rounded text-center text-muted small" style="border: 1px dashed #ced4da;">
-                                    <span id="infoSeleccion" class="fw-bold">Ningún miembro seleccionado de la tabla</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-8 mb-4">
+                        <!-- La tabla ocupa todo el ancho (col-12) -->
+                        <div class="col-12 mb-4">
                             <div class="table-responsive-container shadow-sm p-0 h-100" style="border-radius: 8px; overflow: hidden; background-color: white;">
+
+                                <!-- Banner Superior -->
                                 <div class="table-header-banner text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%);">
-                                    <div><i class="bi bi-people-fill me-2"></i>Miembros Vinculados: @ViewBag.NombreSemilleroSeleccionado4</div>
+                                    <div><i class="bi bi-people-fill me-2"></i>Miembros Vinculados: @(ViewBag.NombreSemilleroSeleccionado4 ?? "Todos")</div>
+                                    <button type="button" id="btnAbrirModalAgregar" class="btn btn-sm btn-light fw-bold shadow-sm" style="color: #278a5f; border-radius: 6px;">
+                                        <i class="bi bi-person-plus-fill me-1"></i> Agregar Investigador
+                                    </button>
                                 </div>
-                                <div class="table-responsive p-3">
+
+                                <div class="table-responsive p-3 border-bottom">
                                     <table class="table table-hover align-middle mb-0" id="tablaInvestigadores" style="cursor:pointer;">
                                         <thead class="table-light">
                                             <tr>
@@ -316,7 +233,7 @@
                                                         <td style="color: #32325d; font-weight: 600;">@inv.NombreCompleto</td>
                                                         <td>@inv.correo_usuario</td>
                                                         <td>
-                                                            @if (inv.estado_usuario == "activo" || inv.estado_usuario == "Activo")
+                                                            @if (inv.estado_usuario != null && (inv.estado_usuario.ToLower() == "activo" || inv.estado_usuario.ToLower() == "activa"))
                                                             {
                                                                 <span class="badge text-white p-2" style="background-color: #278a5f; border-radius:6px;">@inv.estado_usuario</span>
                                                             }
@@ -331,61 +248,49 @@
                                             }
                                             else
                                             {
-                                                <tr><td colspan="4" class="text-center text-muted p-5">Por favor seleccione un semillero en el cuadro de la izquierda para desplegar sus integrantes.</td></tr>
+                                                <tr><td colspan="4" class="text-center text-muted p-5">Actualmente no hay investigadores registrados en este semillero.</td></tr>
                                             }
                                         </tbody>
                                     </table>
                                 </div>
+
+                                <!-- BARRA DE ACCIONES AL FINAL DE LA TABLA -->
+                                <div class="bg-light p-3 d-flex flex-wrap justify-content-between align-items-center">
+                                    <div class="text-muted small">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        <span id="infoSeleccion" class="fw-bold">Ningún investigador seleccionado en la tabla</span>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" onclick="ejecutarAccionInvestigador('habilitar')" class="btn btn-outline-success fw-bold bg-white" style="border-radius: 8px;">
+                                            <i class="bi bi-person-check me-1"></i> Habilitar
+                                        </button>
+                                        <button type="button" onclick="ejecutarAccionInvestigador('deshabilitar')" class="btn btn-outline-warning text-dark fw-bold bg-white" style="border-radius: 8px;">
+                                            <i class="bi bi-person-x me-1"></i> Deshabilitar
+                                        </button>
+                                        <button type="button" onclick="ejecutarAccionInvestigador('eliminar')" class="btn btn-outline-danger fw-bold bg-white" style="border-radius: 8px;">
+                                            <i class="bi bi-trash me-1"></i> Eliminar
+                                        </button>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
                 </div>
-
-                @if (seccionActiva == "filtros")
-                {
-                    <div class="tab-pane fade show active">
-                        <div class="table-responsive-container shadow-sm p-0 mb-4" style="border-radius: 8px; overflow: hidden; background-color: white;">
-                            <div class="table-header-banner text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%);">
-                                <div><i class="bi bi-funnel me-2"></i>Resultados de la Búsqueda Avanzada</div>
-                                <a href="@Url.Action("GestionarSemillero", "Lider", new { seccionCargada = "semilleros" })" class="btn btn-sm btn-light text-dark fw-bold" style="border-radius:6px;">Restablecer Vista</a>
-                            </div>
-                            <div class="table-responsive p-3">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Semillero</th>
-                                            <th>Línea de Investigación</th>
-                                            <th>Fecha Creación</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if (ViewBag.ResultadoFiltros != null && (ViewBag.ResultadoFiltros as List<GestionSemillero1.Models.semillero>).Any())
-                                        {
-                                            foreach (var item in ViewBag.ResultadoFiltros as List<GestionSemillero1.Models.semillero>)
-                                            {
-                                                <tr>
-                                                    <td class="fw-bold" style="color: #32325d;">@item.nombre_semillero</td>
-                                                    <td>@item.linea_investigacion</td>
-                                                    <td>@item.fecha_creacion_semillero.ToString("yyyy-MM-dd")</td>
-                                                </tr>
-                                            }
-                                        }
-                                        else
-                                        {
-                                            <tr><td colspan="3" class="text-center text-muted p-4">Ningún semillero coincide con los filtros aplicados.</td></tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                }
 
             </div>
         </div>
     </div>
 </div>
 
+<!-- FORMULARIO OCULTO PARA PROCESAR LAS ACCIONES DE INVESTIGADORES -->
+<form id="formAccionesFila" action="@Url.Action("ProcesarAccionesInvestigadores", "Lider")" method="post" style="display:none;">
+    <input type="hidden" id="hiddenFilaSemilleroId" name="idSemilleroSeleccionado" value="@idSemilleroSeleccionadoSeccion4" />
+    <input type="hidden" id="hiddenFilaUsuarioId" name="idUsuarioSeleccionado" value="" />
+    <input type="hidden" id="hiddenFilaAccion" name="accionInvestigador" value="" />
+</form>
+
+<!-- Modal Agregar Investigador -->
 <div class="modal fade" id="modalAgregarInvestigador" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius:12px; overflow: hidden; border: none;">
@@ -441,7 +346,7 @@
                     </div>
                 </div>
                 <div class="modal-footer bg-light p-3 border-0">
-                    <button type="button" class="btn btn-secondary btn-sm px-4" id="btnCerrarModalCancel" style="border-radius: 6px;">Cancelar</button>
+                    <button type="button" class="btn btn-secondary btn-sm px-4 fw-bold" id="btnCerrarModalCancel" style="border-radius: 6px;">Cancelar</button>
                     <button type="submit" class="btn text-white btn-sm fw-bold px-4" style="background-color: #278a5f; border-radius: 6px;">Guardar Registro</button>
                 </div>
             }
@@ -458,30 +363,26 @@
         }
     }
 
-    function cambiarSemilleroSeccion4(idSemillero) {
-        if(idSemillero) {
-            window.location.href = `@Url.Action("GestionarSemillero", "Lider")?seccionCargada=investigadores&idSemilleroSeccion4=${idSemillero}`;
-        } else {
-            window.location.href = `@Url.Action("GestionarSemillero", "Lider")?seccionCargada=semilleros`;
-        }
-    }
-
+    // Procesar acción enviando el formulario oculto
     function ejecutarAccionInvestigador(accion) {
-        const idUsuario = document.getElementById("hiddenUsuarioId").value;
-        const idSemillero = document.getElementById("hiddenSemilleroId").value;
+        const idUsuario = document.getElementById("hiddenFilaUsuarioId").value;
+        const idSemillero = document.getElementById("hiddenFilaSemilleroId").value;
 
-        if (idSemillero === "0" || idSemillero === "") {
-            alert("Por favor seleccione un semillero en el combobox antes de procesar.");
+        if (!idSemillero || idSemillero === "0") {
+            alert("No se ha identificado el semillero al que pertenece este investigador.");
             return;
         }
+
         if (!idUsuario) {
-            alert("Por favor seleccione un investigador de la tabla haciendo clic sobre su fila.");
+            alert("Por favor seleccione un investigador haciendo clic sobre su fila en la tabla antes de continuar.");
             return;
         }
 
-        if (confirm(`¿Confirmar acción [${accion}] sobre el investigador seleccionado?`)) {
-            document.getElementById("hiddenAccionInv").value = accion;
-            document.getElementById("formAccionesInvestigadores").submit();
+        let verboAccion = accion === 'eliminar' ? 'eliminar del semillero a' : accion;
+
+        if (confirm(`¿Está seguro de que desea ${verboAccion} este investigador?`)) {
+            document.getElementById("hiddenFilaAccion").value = accion;
+            document.getElementById("formAccionesFila").submit();
         }
     }
 
@@ -493,22 +394,22 @@
         const txtFecha = document.getElementById("txtFecha");
         const txtDescripcion = document.getElementById("txtDescripcion");
         const btnLimpiar = document.getElementById("btnLimpiar");
-        const idAutoincrementableOriginal = "@ViewBag.SiguienteID";
 
         const tablaInvestigadores = document.getElementById("tablaInvestigadores");
         const infoSeleccion = document.getElementById("infoSeleccion");
-        const hiddenUsuarioId = document.getElementById("hiddenUsuarioId");
+        const hiddenUsuarioId = document.getElementById("hiddenFilaUsuarioId");
 
         const btnAbrirModal = document.getElementById("btnAbrirModalAgregar");
         const modalElement = document.getElementById("modalAgregarInvestigador");
         const btnCerrarX = document.getElementById("btnCerrarModalX");
         const btnCerrarCancel = document.getElementById("btnCerrarModalCancel");
 
+        // Modal Agregar
         if (btnAbrirModal) {
             btnAbrirModal.addEventListener("click", function () {
-                const idSemillero = document.getElementById("hiddenSemilleroId").value;
+                const idSemillero = document.getElementById("hiddenFilaSemilleroId").value;
                 if (idSemillero === "0" || idSemillero === "") {
-                    alert("Debe seleccionar un semillero en el combobox antes de poder añadirle investigadores.");
+                    alert("Asegúrese de estar consultando un semillero válido antes de agregar investigadores.");
                     return;
                 }
                 modalElement.classList.add("show");
@@ -525,17 +426,21 @@
         if (btnCerrarX) btnCerrarX.addEventListener("click", cerrarModal);
         if (btnCerrarCancel) btnCerrarCancel.addEventListener("click", cerrarModal);
 
+        // Selección de filas Semilleros (Pestaña 1)
         if (tablaSemilleros) {
             tablaSemilleros.querySelectorAll("tbody tr").forEach(fila => {
                 fila.addEventListener("click", function () {
                     if (this.querySelector(".ID-celda")) {
-                        // Sombreado elegante de fila usando el verde institucional
                         tablaSemilleros.querySelectorAll("tbody tr").forEach(r => r.style.backgroundColor = "");
                         this.style.backgroundColor = "rgba(39, 138, 95, 0.08)";
 
                         txtID.value = this.cells[0].innerText.trim();
                         txtNombre.value = this.cells[1].innerText.trim();
-                        txtFecha.value = this.cells[2].innerText.trim();
+
+                        let fechaTexto = this.cells[2].innerText.trim();
+                        if(fechaTexto.length > 10) fechaTexto = fechaTexto.substring(0, 10);
+                        txtFecha.value = fechaTexto;
+
                         txtLinea.value = this.cells[3].innerText.trim();
                         txtDescripcion.value = this.querySelector(".descripcion-oculta").innerText.trim();
                     }
@@ -548,7 +453,7 @@
                 if(tablaSemilleros) {
                     tablaSemilleros.querySelectorAll("tbody tr").forEach(r => r.style.backgroundColor = "");
                 }
-                txtID.value = idAutoincrementableOriginal;
+                txtID.value = "";
                 txtNombre.value = "";
                 txtLinea.value = "";
                 txtFecha.value = "";
@@ -556,20 +461,19 @@
             });
         }
 
+        // Recuperar la lógica de selección de Investigadores (Pestaña 2)
         if (tablaInvestigadores) {
             tablaInvestigadores.querySelectorAll("tbody tr").forEach(fila => {
                 fila.addEventListener("click", function () {
                     if (this.querySelector(".id-user-oculto")) {
                         tablaInvestigadores.querySelectorAll("tbody tr").forEach(r => r.style.backgroundColor = "");
-
-                        // Sombreado elegante
                         this.style.backgroundColor = "rgba(39, 138, 95, 0.12)";
+
                         const idUser = this.querySelector(".id-user-oculto").innerText.trim();
                         const nombreCompleto = this.cells[1].innerText.trim();
 
                         hiddenUsuarioId.value = idUser;
-                        infoSeleccion.innerHTML = `<strong>Seleccionado:</strong> ${nombreCompleto}`;
-                        infoSeleccion.style.color = "#278a5f";
+                        infoSeleccion.innerHTML = `Seleccionado: <span style="color: #278a5f;">${nombreCompleto}</span>`;
                     }
                 });
             });

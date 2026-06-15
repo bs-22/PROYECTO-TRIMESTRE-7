@@ -1,131 +1,220 @@
 ﻿@model List<GestionSemillero1.Models.semillero>
 @{
-    ViewBag.Title = "Menú Principal";
+    ViewBag.Title = "Menú Principal - Administrador";
     Layout = "~/Views/Shared/_LayoutAdministrador.cshtml";
-
-    var comboSemilleros = ViewBag.ListaSemilleros as List<GestionSemillero1.Models.semillero>;
-    var comboLineas = ViewBag.ListaLineas as List<string>;
-    var todosSemilleros = ViewBag.TodosSemilleros as List<GestionSemillero1.Models.semillero>;
 }
 
 <style>
-    .filter-card {
-        background: #ffffff;
+    :root {
+        --sena-green: #39a900;
+    }
+
+    .card-sena {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #ffffff;
+    }
+
+    .card-sena-header {
+        border-left: 5px solid var(--sena-green);
+    }
+
+    .btn-sena {
+        background-color: var(--sena-green);
+        color: white;
         border: none;
+        text-decoration: none;
+    }
+
+        .btn-sena:hover {
+            background-color: #2e8b00;
+            color: white;
+            text-decoration: none;
+        }
+
+    .bg-sena {
+        background-color: var(--sena-green);
+        color: white;
+    }
+
+    /* Clases para Validaciones y Limpieza Visual */
+    a {
+        text-decoration: none !important;
+    }
+
+    .error-border {
+        border: 2px solid #dc3545 !important;
+    }
+
+    .msg-error {
+        color: #dc3545;
+        font-size: 0.75rem;
+        display: none;
+        margin-top: 4px;
+        font-weight: bold;
+    }
+
+    /* Scroll personalizado para la vista rápida */
+    .scroll-container {
+        max-height: 400px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    /* Estilos del Encabezado de Sección */
+    .header-icon-box {
+        background-color: #d1e7dd; /* Verde sutil institucional */
+        color: #198754;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         border-radius: 12px;
-    }
-
-    .dashboard-card {
-        background: #ffffff;
-        border: none;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-    }
-
-    .semillero-badge-card {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        border: none !important;
-        border-radius: 10px;
-    }
-
-    .card-semillero-click:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 15px rgba(0,0,0,0.08) !important;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: #f1f5f9;
-        border-radius: 10px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 10px;
-    }
-
-    .sticky-table-header {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background-color: #f8fafc !important;
     }
 </style>
 
 <div class="container-fluid px-2" style="font-size: 0.9rem;">
-    <div class="row g-4">
+
+    <div class="d-flex align-items-center mb-4 mt-2">
+        <div class="header-icon-box me-3 shadow-sm">
+            <i class="bi bi-tree-fill fs-3"></i>
+        </div>
+        <div>
+            <h4 class="fw-bold mb-1" style="color: #2c3e50;">Módulo de Gestión de Semilleros</h4>
+            <p class="text-muted mb-0">Administre los grupos de investigación, asigne líneas de enfoque y supervise su estado operativo en el sistema.</p>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col-md-3">
-            <div class="card filter-card shadow-sm p-4 bg-white">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="p-2 bg-success-subtle text-success rounded-3 me-2"><i class="bi bi-funnel-fill fs-5"></i></div>
-                    <h5 class="fw-bold text-dark m-0" style="font-size: 1.1rem;">Búsqueda y Filtros</h5>
-                </div>
-                @using (Html.BeginForm("Index", "Administrador", FormMethod.Get, new { id = "formFiltrosUnificado" }))
+            <div class="card p-3 shadow-sm card-sena">
+                <h6 class="fw-bold text-success"><i class="bi bi-funnel-fill"></i> Busqueda por filtro</h6>
+                @using (Html.BeginForm("Index", "Administrador", FormMethod.Get, new { id = "formFiltros" }))
                 {
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-secondary"><i class="bi bi-tree me-1"></i> Por nombre</label>
-                        <select name="filtroSemillero" class="form-select form-select-sm">
-                            <option value="">-- Ver todos --</option>
-                            @foreach (var sem in comboSemilleros ?? new List<GestionSemillero1.Models.semillero>())
-                            {
-                                <option value="@sem.ID_semillero" @(ViewBag.SemilleroSeleccionado?.ToString() == sem.ID_semillero.ToString() ? "selected" : "")>@sem.nombre_semillero</option>
-                            }
-                        </select>
+                    <label class="small mt-2 fw-bold">Seleccione un semillero</label>
+                    <select name="filtroSemillero" id="fSemillero" class="form-select mb-2">
+                        <option value="">-- Seleccione --</option>
+                        @foreach (var s in ViewBag.ListaSemilleros)
+                        {
+                            <option value="@s.ID_semillero">@s.nombre_semillero</option>
+                        }
+                    </select>
+                    <button type="button" class="btn btn-secondary btn-sm w-100 mb-3" onclick="validarFiltro('fSemillero')">Buscar</button>
+
+                    <label class="small fw-bold">Línea de investigación</label>
+                    <select name="filtroLinea" id="fLinea" class="form-select mb-2">
+                        <option value="">-- Seleccione --</option>
+                        @foreach (var l in ViewBag.ListaLineas)
+                        {
+                            <option value="@l">@l</option>
+                        }
+                    </select>
+                    <button type="button" class="btn btn-secondary btn-sm w-100 mb-3" onclick="validarFiltro('fLinea')">Buscar</button>
+
+                    <label class="small fw-bold">Consultar por fecha</label>
+                    <input type="date" name="filtroFecha" id="fFecha" class="form-control mb-2" />
+                    <button type="button" class="btn btn-secondary btn-sm w-100 mb-2" onclick="validarFiltro('fFecha')">Consultar</button>
+
+                    <div class="text-center mt-2">
+                        <a href="@Url.Action("Index")" class="btn btn-link btn-sm text-dark"><i class="bi bi-arrow-clockwise"></i> Restablecer vista</a>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-secondary"><i class="bi bi-tags me-1"></i> Línea</label>
-                        <select name="filtroLinea" class="form-select form-select-sm">
-                            <option value="">-- Ver todas --</option>
-                            @foreach (var linea in comboLineas ?? new List<string>())
-                            {
-                                <option value="@linea" @(ViewBag.LineaSeleccionada?.ToString() == linea ? "selected" : "")>@linea</option>
-                            }
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-sm btn-success w-100 fw-bold"><i class="bi bi-search me-1"></i> Aplicar</button>
                 }
             </div>
         </div>
 
         <div class="col-md-9">
-            <div class="card dashboard-card shadow-sm mb-4 p-4 bg-white">
-                <div class="d-flex justify-content-between mb-3">
-                    <span class="fw-bold text-dark fs-5">Semilleros Institucionales</span>
+            <div class="card p-4 shadow-sm card-sena h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                    <h6 class="fw-bold m-0"><i class="bi bi-tree-fill text-success"></i> Vista Rápida de Semilleros</h6>
+                    <span class="badge bg-success">@Model.Count(s => s.estado == "activo") activos</span>
                 </div>
-                <div class="row custom-scrollbar" style="max-height: 310px; overflow-y: auto;">
-                    @foreach (var item in Model ?? new List<GestionSemillero1.Models.semillero>())
+
+                <div class="row scroll-container pe-2">
+                    @foreach (var s in Model)
                     {
-                        <div class="col-xl-6 col-md-12 mb-3">
-                            <div class="card h-100 shadow-sm border-start border-4 border-success semillero-badge-card bg-light card-semillero-click" data-id="@item.ID_semillero">
-                                <div class="card-body p-3">
-                                    <h6 class="fw-bold text-primary">@item.nombre_semillero</h6>
-                                    <p class="small text-muted">@item.descripcion_semillero</p>
+                        <div class="col-md-6 mb-3">
+                            <div class="card p-3 card-sena-header shadow-sm h-100">
+                                <h6 class="fw-bold text-primary">@s.nombre_semillero</h6>
+                                <p class="small text-muted mb-1">Código ID: @s.ID_semillero</p>
+                                <p class="small">@s.descripcion_semillero</p>
+                                <div class="d-flex justify-content-between small text-muted mt-auto">
+                                    <span><i class="bi bi-tag"></i> @s.linea_investigacion</span>
+                                    <span><i class="bi bi-calendar"></i> @s.fecha_creacion_semillero.ToString("dd/MM/yyyy")</span>
                                 </div>
                             </div>
                         </div>
                     }
                 </div>
             </div>
+        </div>
+    </div>
 
-            <div class="card dashboard-card shadow-sm p-4 bg-white">
-                <div class="fw-bold text-dark mb-3" id="txtTituloFormulario">Registrar Semillero</div>
-                @using (Html.BeginForm("GuardarSemillero", "Administrador", FormMethod.Post, new { id = "formGestionSemillero" }))
+    <div class="row mt-4">
+        <div class="col-md-7">
+            <div class="card p-4 shadow-sm card-sena h-100">
+                <h6 class="fw-bold mb-3"><i class="bi bi-table text-success"></i> Historial y Registros</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-sm m-0">
+                        <thead class="table-light"><tr><th>ID</th><th>Semillero</th><th>Estado</th></tr></thead>
+                        <tbody>
+                            @foreach (var s in (List<GestionSemillero1.Models.semillero>)ViewBag.TodosSemilleros)
+                            {
+                                <tr style="cursor:pointer;" onclick="cargarFormulario(@s.ID_semillero, '@s.nombre_semillero', '@s.linea_investigacion', '@s.descripcion_semillero')">
+                                    <td>@s.ID_semillero</td>
+                                    <td>@s.nombre_semillero</td>
+                                    <td class="text-center"><span class="badge @(s.estado == "activo" ? "bg-success" : "bg-danger")">@s.estado</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card p-4 shadow-sm bg-light card-sena h-100">
+                <h6 class="fw-bold mb-3"><i class="bi bi-pencil-square text-success"></i> Acciones y Detalles</h6>
+                @using (Html.BeginForm("GuardarSemillero", "Administrador", FormMethod.Post, new { id = "formSemillero" }))
                 {
-                    <input type="hidden" id="hdnIDSemillero" name="ID_semillero" value="0" />
-                    <input type="hidden" id="hdnAccion" name="accion" value="agregar" />
+                    <input type="hidden" name="ID_semillero" id="hdnID" value="0" />
 
-                    <div class="row g-3">
-                        <div class="col-md-6"><input type="text" class="form-control form-control-sm" id="txtNombreSemillero" name="nombre_semillero" required placeholder="Nombre" /></div>
-                        <div class="col-md-6"><input type="text" class="form-control form-control-sm" id="txtLineaInvestigacion" name="linea_investigacion" required placeholder="Línea" /></div>
-                        <div class="col-md-12"><textarea class="form-control form-control-sm" name="descripcion_semillero" id="txtDescripcionSemillero" placeholder="Descripción"></textarea></div>
+                    <div class="mb-2 position-relative">
+                        <label class="small fw-bold text-secondary">Nombre</label>
+                        <input type="text" name="nombre_semillero" id="txtNombre" class="form-control form-control-sm" required />
                     </div>
 
-                    <div class="mt-3">
-                        <button type="submit" onclick="$('#hdnAccion').val('actualizar')" class="btn btn-warning btn-sm d-none" id="btnActualizarSem">Actualizar</button>
-                        <button type="submit" onclick="$('#hdnAccion').val('agregar')" class="btn btn-success btn-sm" id="btnAgregarSem">Registrar</button>
+                    <div class="mb-2 position-relative">
+                        <label class="small fw-bold text-secondary">Línea de investigación</label>
+                        <input type="text" name="linea_investigacion" id="txtLinea" class="form-control form-control-sm" required />
+                    </div>
+
+                    <div class="mb-2 position-relative">
+                        <label class="small fw-bold text-secondary">Líder asignado</label>
+                        <select class="form-select form-select-sm" required>
+                            <option value="">-- Seleccione --</option>
+                            @foreach (var l in ViewBag.ComboLideres)
+                            {
+                                <option value="@l.ID_usuario">@l.correo_usuario</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="small fw-bold text-secondary">ID asignado</label>
+                        <input type="text" id="txtIdVisual" class="form-control form-control-sm text-muted bg-light" readonly placeholder="Generado automáticamente" />
+                    </div>
+
+                    <div class="mb-3 position-relative">
+                        <label class="small fw-bold text-secondary">Descripción general</label>
+                        <textarea name="descripcion_semillero" id="txtDesc" class="form-control form-control-sm" rows="3" required></textarea>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 justify-content-end mt-auto">
+                        <button type="button" class="btn btn-secondary btn-sm shadow-sm" onclick="limpiarFormulario()">Cancelar</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm shadow-sm" onclick="validarAccionEspecifica('Desactivar')">Desactivar</button>
+                        <button type="button" class="btn btn-outline-success btn-sm shadow-sm" onclick="validarAccionEspecifica('Activar')">Activar</button>
+                        <button type="submit" class="btn btn-sena btn-sm shadow-sm">Guardar / Actualizar</button>
                     </div>
                 }
             </div>
@@ -133,17 +222,96 @@
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        $(".fila-semillero").click(function () {
-            var c = $(this).find("td");
-            $("#hdnIDSemillero").val(c.eq(0).text().trim());
-            $("#txtNombreSemillero").val(c.eq(1).text().trim());
-            $("#txtLineaInvestigacion").val($(this).data("linea"));
-            $("#txtDescripcionSemillero").val($(this).data("desc"));
+<script>
+    // --- 1. Lógica del Formulario de Acciones ---
+    function cargarFormulario(id, nombre, linea, desc) {
+        $("#hdnID").val(id);
+        $("#txtIdVisual").val(id);
+        $("#txtNombre").val(nombre);
+        $("#txtLinea").val(linea);
+        $("#txtDesc").val(desc);
 
-            $("#btnAgregarSem").addClass("d-none");
-            $("#btnActualizarSem").removeClass("d-none");
+        $("#formSemillero").find('.error-border').removeClass('error-border');
+        $(".msg-error").hide();
+
+        // Desplazamiento suave si el usuario hace click en la tabla inferior
+        $('html, body').animate({ scrollTop: $("#txtIdVisual").offset().top - 150 }, 150);
+    }
+
+    function limpiarFormulario() {
+        $("#formSemillero")[0].reset();
+        $("#hdnID").val("0");
+        $("#txtIdVisual").val("");
+
+        $("#formSemillero").find('.error-border').removeClass('error-border');
+        $(".msg-error").hide();
+    }
+
+    // --- 2. Validación "On-Blur" ---
+    document.querySelectorAll('#formSemillero input[required], #formSemillero select[required], #formSemillero textarea[required]').forEach(input => {
+        input.addEventListener('blur', function () {
+            if (this.value.trim() === '') {
+                this.classList.add('error-border');
+                if (!this.nextElementSibling || !this.nextElementSibling.classList.contains('msg-error')) {
+                    let msg = document.createElement('div');
+                    msg.className = 'msg-error';
+                    msg.innerText = 'Este campo es obligatorio.';
+                    this.parentNode.appendChild(msg);
+                }
+                this.nextElementSibling.style.display = 'block';
+            } else {
+                this.classList.remove('error-border');
+                if (this.nextElementSibling && this.nextElementSibling.classList.contains('msg-error')) {
+                    this.nextElementSibling.style.display = 'none';
+                }
+            }
         });
-    </script>
-}
+    });
+
+    // --- 3. Validación "On-Submit" ---
+    $("#formSemillero").submit(function (e) {
+        let valid = true;
+        $(this).find('input[required], select[required], textarea[required]').each(function () {
+            if ($(this).val().trim() === "") {
+                $(this).addClass('error-border');
+                if (!this.nextElementSibling || !this.nextElementSibling.classList.contains('msg-error')) {
+                    let msg = document.createElement('div');
+                    msg.className = 'msg-error';
+                    msg.innerText = 'Este campo es obligatorio.';
+                    this.parentNode.appendChild(msg);
+                }
+                this.nextElementSibling.style.display = 'block';
+                valid = false;
+            } else {
+                $(this).removeClass('error-border');
+            }
+        });
+
+        if (!valid) {
+            e.preventDefault();
+            alert("Acción denegada: Debes rellenar todos los campos obligatorios antes de guardar.");
+        }
+    });
+
+    // --- 4. Validación para Botones de Acción ---
+    function validarAccionEspecifica(accion) {
+        if ($("#hdnID").val() == "0") {
+            alert("Denegado: No puedes " + accion.toLowerCase() + ". Primero debes seleccionar un semillero de la tabla de historial.");
+        } else {
+            if (confirm("¿Estás seguro de que deseas " + accion.toLowerCase() + " este semillero?")) {
+                alert("Acción confirmada (Simulación). Conecta el backend aquí.");
+            }
+        }
+    }
+
+    // --- 5. Validación Filtros ---
+    function validarFiltro(idCampo) {
+        let campo = document.getElementById(idCampo);
+        if (campo.value.trim() === '') {
+            alert("Por favor, seleccione o ingrese un valor válido para filtrar.");
+            campo.focus();
+        } else {
+            document.getElementById('formFiltros').submit();
+        }
+    }
+</script>

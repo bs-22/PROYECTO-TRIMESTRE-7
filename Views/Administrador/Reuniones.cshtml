@@ -14,6 +14,11 @@
         border-radius: 12px;
     }
 
+    /* Regla para eliminar subrayados en enlaces */
+    a {
+        text-decoration: none !important;
+    }
+
     .table th {
         font-size: 0.8rem;
         letter-spacing: 0.5px;
@@ -57,9 +62,31 @@
         border-radius: 8px;
         background-color: #f8fafc;
     }
+
+    /* Estilos del Encabezado de Sección */
+    .header-icon-box {
+        background-color: #d1e7dd; /* Verde sutil institucional */
+        color: #198754;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+    }
 </style>
 
 <div class="container-fluid px-2" style="font-size: 0.9rem;">
+
+    <div class="d-flex align-items-center mb-4 mt-2">
+        <div class="header-icon-box me-3 shadow-sm">
+            <i class="bi bi-camera-video-fill fs-3"></i>
+        </div>
+        <div>
+            <h4 class="fw-bold mb-1" style="color: #2c3e50;">Módulo de Gestión de Reuniones</h4>
+            <p class="text-muted mb-0">Programe comités, asigne lugares o plataformas virtuales y controle la convocatoria de asistencia.</p>
+        </div>
+    </div>
 
     <div class="row g-4">
         <div class="col-md-3">
@@ -101,7 +128,7 @@
 
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-sm btn-success fw-bold py-2 shadow-sm"><i class="bi bi-search me-1"></i> Filtrar Agenda</button>
-                        <a href="@Url.Action("Reuniones", "Administrador")" class="btn btn-sm btn-outline-secondary py-2 text-decoration-none text-center">
+                        <a href="@Url.Action("Reuniones", "Administrador")" class="btn btn-sm btn-outline-secondary py-2 text-center">
                             <i class="bi bi-arrow-counterclockwise"></i> Limpiar Filtros
                         </a>
                     </div>
@@ -175,7 +202,7 @@
                     <div class="box-title fw-bold text-dark fs-6" id="txtTituloFormulario">
                         <i class="bi bi-pencil-square text-success me-2"></i>Detalles y Registro de Comité
                     </div>
-                    <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none d-none" id="btnResetForm" onclick="resetearFormularioReunion()">
+                    <button type="button" class="btn btn-sm btn-link text-muted d-none" id="btnResetForm" onclick="resetearFormularioReunion()">
                         <i class="bi bi-arrow-left-short"></i> Agendar Nueva Reunión
                     </button>
                 </div>

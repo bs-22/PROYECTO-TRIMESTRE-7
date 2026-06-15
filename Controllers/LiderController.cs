@@ -374,8 +374,10 @@ namespace GestionSemillero1.Controllers
 
 
 
+
+
         // GET: Lider/GestionarSemillero
-        public ActionResult GestionarSemillero(string semilleroFiltro, string lineaFiltro, string fechaFiltro, string seccionCargada, decimal? idSemilleroSeccion4)
+        public ActionResult GestionarSemillero(string criterioBusqueda, string valorBusqueda, string seccionCargada, decimal? idSemilleroSeccion4)
         {
             Response.Cache.SetCacheability(HttpCacheability.NoCache);
             Response.Cache.SetNoStore();
@@ -385,66 +387,84 @@ namespace GestionSemillero1.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            decimal siguienteId = 2001;
-            var ultimoSemillero = db.semillero.OrderByDescending(s => s.ID_semillero).FirstOrDefault();
-            if (ultimoSemillero != null)
-            {
-                siguienteId = ultimoSemillero.ID_semillero + 1;
-            }
-            ViewBag.SiguienteID = siguienteId;
+            // --- TRADUCTOR SEGURO ---
+            string valorSesion = Session["UsuarioLogueado"].ToString();
+            decimal idLiderActual = 0;
 
-            var todosLosSemilleros = db.semillero.ToList() ?? new List<semillero>();
-            ViewBag.SemillerosFiltro = todosLosSemilleros;
-            ViewBag.LineasFiltro = todosLosSemilleros.Select(s => s.linea_investigacion).Distinct().ToList();
+            if (!decimal.TryParse(valorSesion, out idLiderActual))
+            {
+                var usuarioDb = db.Usuarios.FirstOrDefault(u => u.correo_usuario == valorSesion);
+                if (usuarioDb != null)
+                {
+                    idLiderActual = usuarioDb.ID_usuario;
+                }
+                else
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+            }
+            // -------------------------
+
+            var misSemilleros = (from s in db.semillero
+                                 join i in db.investigadores on s.ID_semillero equals i.ID_semillero
+                                 where i.ID_usuario == idLiderActual
+                                 select s).Distinct().ToList() ?? new List<semillero>();
 
             ViewBag.SeccionActual = string.IsNullOrEmpty(seccionCargada) ? "semilleros" : seccionCargada;
 
-            if (idSemilleroSeccion4.HasValue)
+            // --- NUEVA LÓGICA: CARGA AUTOMÁTICA DE INVESTIGADORES ---
+            if (ViewBag.SeccionActual == "investigadores")
             {
-                ViewBag.SeccionActual = "investigadores";
-                ViewBag.IdSemilleroSeleccionado4 = idSemilleroSeccion4.Value;
+                // Obtenemos todos los IDs de los semilleros que administra este líder
+                var idsMisSemilleros = misSemilleros.Select(s => s.ID_semillero).ToList();
 
-                var semActual = db.semillero.Find(idSemilleroSeccion4.Value);
-                ViewBag.NombreSemilleroSeleccionado4 = semActual != null ? semActual.nombre_semillero : "";
+                // Extraemos el primer semillero como "Principal" para enlazarlo al Modal de "Agregar Investigador"
+                var semilleroPrincipal = misSemilleros.FirstOrDefault();
+                if (semilleroPrincipal != null)
+                {
+                    ViewBag.IdSemilleroSeleccionado4 = semilleroPrincipal.ID_semillero;
+                    ViewBag.NombreSemilleroSeleccionado4 = semilleroPrincipal.nombre_semillero;
+                }
 
-                List<InvestigadorFiltroViewModel> listaDeMiembros = (from i in db.investigadores
-                                                                     join u in db.Usuarios on i.ID_usuario equals u.ID_usuario
-                                                                     where i.ID_semillero == idSemilleroSeccion4.Value
-                                                                     select new InvestigadorFiltroViewModel
-                                                                     {
-                                                                         ID_investigador = i.ID_investigador,
-                                                                         NombreCompleto = i.nombre_investigador + " " + i.apellido_investigador,
-                                                                         correo_usuario = u.correo_usuario,
-                                                                         estado_usuario = u.estado_usuario,
-                                                                         ID_usuario = i.ID_usuario
-                                                                     }).ToList();
-
-                ViewBag.InvestigadoresDeEsteSemillero = listaDeMiembros;
+                // Consultamos automáticamente todos los investigadores de los semilleros de este líder
+                ViewBag.InvestigadoresDeEsteSemillero = (from i in db.investigadores
+                                                         join u in db.Usuarios on i.ID_usuario equals u.ID_usuario
+                                                         where idsMisSemilleros.Contains(i.ID_semillero) && i.ID_usuario != idLiderActual // Opcional: excluye al líder de la tabla
+                                                         select new InvestigadorFiltroViewModel
+                                                         {
+                                                             ID_investigador = i.ID_investigador,
+                                                             NombreCompleto = i.nombre_investigador + " " + i.apellido_investigador,
+                                                             correo_usuario = u.correo_usuario,
+                                                             estado_usuario = u.estado_usuario,
+                                                             ID_usuario = i.ID_usuario
+                                                         }).ToList();
             }
 
+            // --- SE MANTIENE TU LÓGICA DE FILTROS ---
             if (ViewBag.SeccionActual == "filtros")
             {
-                var query = db.semillero.AsQueryable();
+                var query = (from s in db.semillero
+                             join i in db.investigadores on s.ID_semillero equals i.ID_semillero
+                             where i.ID_usuario == idLiderActual
+                             select s).Distinct().AsQueryable();
 
-                if (!string.IsNullOrEmpty(semilleroFiltro))
+                if (!string.IsNullOrEmpty(criterioBusqueda) && !string.IsNullOrEmpty(valorBusqueda))
                 {
-                    decimal idSem = Convert.ToDecimal(semilleroFiltro);
-                    query = query.Where(s => s.ID_semillero == idSem);
+                    string valorStr = valorBusqueda.ToLower().Trim();
+
+                    if (criterioBusqueda == "nombre") query = query.Where(s => s.nombre_semillero.ToLower().Contains(valorStr));
+                    else if (criterioBusqueda == "linea") query = query.Where(s => s.linea_investigacion.ToLower().Contains(valorStr));
+                    else if (criterioBusqueda == "estado") query = query.Where(s => s.estado.ToLower() == valorStr);
                 }
-                if (!string.IsNullOrEmpty(lineaFiltro))
+                else
                 {
-                    query = query.Where(s => s.linea_investigacion == lineaFiltro);
-                }
-                if (!string.IsNullOrEmpty(fechaFiltro))
-                {
-                    DateTime fecha = Convert.ToDateTime(fechaFiltro);
-                    query = query.Where(s => s.fecha_creacion_semillero == fecha);
+                    TempData["Error"] = "Debe seleccionar un criterio y escribir un valor para realizar la búsqueda.";
                 }
 
                 ViewBag.ResultadoFiltros = query.ToList();
             }
 
-            return View(todosLosSemilleros);
+            return View(misSemilleros);
         }
 
         // POST: Lider/GestionarSemillero
@@ -453,39 +473,52 @@ namespace GestionSemillero1.Controllers
         {
             if (Session["UsuarioLogueado"] == null) return RedirectToAction("Login", "Account");
 
+            string valorSesion = Session["UsuarioLogueado"].ToString();
+            decimal idLiderActual = 0;
+            if (!decimal.TryParse(valorSesion, out idLiderActual))
+            {
+                var usuarioDb = db.Usuarios.FirstOrDefault(u => u.correo_usuario == valorSesion);
+                if (usuarioDb != null) { idLiderActual = usuarioDb.ID_usuario; }
+                else { return RedirectToAction("Login", "Account"); }
+            }
+
             try
             {
-                if (accion == "agregar")
+                // Se removió el bloque completo de la acción "agregar"
+                if (accion == "actualizar" || accion == "eliminar")
                 {
-                    datosSemillero.estado = "activo";
-                    db.semillero.Add(datosSemillero);
-                    db.SaveChanges();
-                }
-                else if (accion == "actualizar")
-                {
-                    var registro = db.semillero.Find(datosSemillero.ID_semillero);
+                    var registro = (from s in db.semillero
+                                    join i in db.investigadores on s.ID_semillero equals i.ID_semillero
+                                    where s.ID_semillero == datosSemillero.ID_semillero && i.ID_usuario == idLiderActual
+                                    select s).FirstOrDefault();
+
                     if (registro != null)
                     {
-                        registro.nombre_semillero = datosSemillero.nombre_semillero;
-                        registro.linea_investigacion = datosSemillero.linea_investigacion;
-                        registro.fecha_creacion_semillero = datosSemillero.fecha_creacion_semillero;
-                        registro.descripcion_semillero = datosSemillero.descripcion_semillero;
+                        if (accion == "actualizar")
+                        {
+                            registro.nombre_semillero = datosSemillero.nombre_semillero;
+                            registro.linea_investigacion = datosSemillero.linea_investigacion;
+                            registro.fecha_creacion_semillero = datosSemillero.fecha_creacion_semillero;
+                            registro.descripcion_semillero = datosSemillero.descripcion_semillero;
+                        }
+                        else if (accion == "eliminar")
+                        {
+                            var miembros = db.investigadores.Where(i => i.ID_semillero == datosSemillero.ID_semillero);
+                            db.investigadores.RemoveRange(miembros);
+
+                            db.semillero.Remove(registro);
+                        }
                         db.SaveChanges();
                     }
-                }
-                else if (accion == "eliminar")
-                {
-                    var registro = db.semillero.Find(datosSemillero.ID_semillero);
-                    if (registro != null)
+                    else
                     {
-                        db.semillero.Remove(registro);
-                        db.SaveChanges();
+                        TempData["Error"] = "No cuenta con los privilegios requeridos para alterar este registro.";
                     }
                 }
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Error: " + ex.Message;
+                TempData["Error"] = "Error inesperado al procesar la solicitud: " + ex.Message;
             }
 
             return RedirectToAction("GestionarSemillero", new { seccionCargada = "semilleros" });
@@ -497,6 +530,26 @@ namespace GestionSemillero1.Controllers
         {
             if (Session["UsuarioLogueado"] == null) return RedirectToAction("Login", "Account");
 
+            string valorSesion = Session["UsuarioLogueado"].ToString();
+            decimal idLiderActual = 0;
+            if (!decimal.TryParse(valorSesion, out idLiderActual))
+            {
+                var usuarioDb = db.Usuarios.FirstOrDefault(u => u.correo_usuario == valorSesion);
+                if (usuarioDb != null) { idLiderActual = usuarioDb.ID_usuario; }
+                else { return RedirectToAction("Login", "Account"); }
+            }
+
+            bool esDueno = (from s in db.semillero
+                            join i in db.investigadores on s.ID_semillero equals i.ID_semillero
+                            where s.ID_semillero == idSemilleroSeleccionado && i.ID_usuario == idLiderActual
+                            select s).Any();
+
+            if (!esDueno)
+            {
+                TempData["Error"] = "Operación bloqueada. No administra el semillero de destino.";
+                return RedirectToAction("GestionarSemillero");
+            }
+
             if (accionInvestigador == "agregar")
             {
                 using (var transaccion = db.Database.BeginTransaction())
@@ -504,93 +557,70 @@ namespace GestionSemillero1.Controllers
                     try
                     {
                         var correoLimpio = nuevoInvestigadorCorreo.Trim().ToLower();
+                        if (db.Usuarios.Any(u => u.correo_usuario.Trim().ToLower() == correoLimpio))
+                            throw new Exception("El correo electrónico ya se encuentra en uso dentro del sistema.");
 
-                        bool existeUsuario = db.Usuarios.Any(u => u.correo_usuario.Trim().ToLower() == correoLimpio);
-                        if (existeUsuario)
+                        Usuario nuevoUsuario = new Usuario
                         {
-                            throw new Exception("El correo ingresado ya se encuentra registrado en el sistema.");
-                        }
-
-                        Usuario nuevoUsuario = new Usuario();
-                        decimal nextUserId = 1;
-                        var ultimoUser = db.Usuarios.OrderByDescending(u => u.ID_usuario).FirstOrDefault();
-                        if (ultimoUser != null) nextUserId = ultimoUser.ID_usuario + 1;
-
-                        nuevoUsuario.ID_usuario = nextUserId;
-                        nuevoUsuario.correo_usuario = nuevoInvestigadorCorreo.Trim();
-                        nuevoUsuario.contraseña_usuario = nuevoInvestigadorContrasena;
-                        nuevoUsuario.tipo_usuario = "investigador";
-                        nuevoUsuario.estado_usuario = "activo";
-
+                            ID_usuario = (db.Usuarios.Max(u => (decimal?)u.ID_usuario) ?? 0) + 1,
+                            correo_usuario = nuevoInvestigadorCorreo.Trim(),
+                            contraseña_usuario = nuevoInvestigadorContrasena,
+                            tipo_usuario = "investigador",
+                            estado_usuario = "activo"
+                        };
                         db.Usuarios.Add(nuevoUsuario);
                         db.SaveChanges();
 
-                        investigadores nuevoInv = new investigadores();
-                        decimal nextInvId = 1;
-                        var ultimoInv = db.investigadores.OrderByDescending(i => i.ID_investigador).FirstOrDefault();
-                        if (ultimoInv != null) nextInvId = ultimoInv.ID_investigador + 1;
-
-                        nuevoInv.ID_investigador = nextInvId;
-                        nuevoInv.nombre_investigador = nuevoInvestigadorNombre;
-                        nuevoInv.apellido_investigador = nuevoInvestigadorApellido;
-                        nuevoInv.tipo_documento = nuevoInvestigadorDoc;
-                        nuevoInv.edad_investigador = nuevoInvestigadorEdad ?? 20;
-                        nuevoInv.telefono_investigador = nuevoInvestigadorTel ?? 0;
-                        nuevoInv.ID_usuario = nuevoUsuario.ID_usuario;
-                        nuevoInv.ID_semillero = idSemilleroSeleccionado.Value;
-
+                        investigadores nuevoInv = new investigadores
+                        {
+                            ID_investigador = (db.investigadores.Max(i => (decimal?)i.ID_investigador) ?? 0) + 1,
+                            nombre_investigador = nuevoInvestigadorNombre,
+                            apellido_investigador = nuevoInvestigadorApellido,
+                            tipo_documento = nuevoInvestigadorDoc,
+                            edad_investigador = nuevoInvestigadorEdad ?? 20,
+                            telefono_investigador = nuevoInvestigadorTel ?? 0,
+                            ID_usuario = nuevoUsuario.ID_usuario,
+                            ID_semillero = idSemilleroSeleccionado.Value
+                        };
                         db.investigadores.Add(nuevoInv);
                         db.SaveChanges();
 
                         transaccion.Commit();
                     }
-                    catch (Exception ex)
-                    {
-                        transaccion.Rollback();
-                        TempData["Error"] = ex.Message;
-                    }
+                    catch (Exception ex) { transaccion.Rollback(); TempData["Error"] = ex.Message; }
                 }
             }
             else
             {
                 try
                 {
-                    if (!string.IsNullOrEmpty(idUsuarioSeleccionado))
+                    decimal idUser = Convert.ToDecimal(idUsuarioSeleccionado);
+                    var usuario = db.Usuarios.Find(idUser);
+                    if (usuario != null)
                     {
-                        decimal idUser = Convert.ToDecimal(idUsuarioSeleccionado);
-                        var usuario = db.Usuarios.Find(idUser);
-
-                        if (usuario != null)
+                        if (accionInvestigador == "habilitar") usuario.estado_usuario = "activo";
+                        else if (accionInvestigador == "deshabilitar") usuario.estado_usuario = "inactivo";
+                        else if (accionInvestigador == "eliminar")
                         {
-                            if (accionInvestigador == "habilitar")
-                            {
-                                usuario.estado_usuario = "activo";
-                                db.SaveChanges();
-                            }
-                            else if (accionInvestigador == "deshabilitar")
-                            {
-                                usuario.estado_usuario = "inactivo";
-                                db.SaveChanges();
-                            }
-                            else if (accionInvestigador == "eliminar" && idSemilleroSeleccionado.HasValue)
-                            {
-                                var relacion = db.investigadores.FirstOrDefault(i => i.ID_usuario == idUser && i.ID_semillero == idSemilleroSeleccionado.Value);
-                                if (relacion != null)
-                                {
-                                    db.investigadores.Remove(relacion);
-                                    db.SaveChanges();
-                                }
-                            }
+                            var relacion = db.investigadores.FirstOrDefault(i => i.ID_usuario == idUser && i.ID_semillero == idSemilleroSeleccionado.Value);
+                            if (relacion != null) db.investigadores.Remove(relacion);
                         }
+                        db.SaveChanges();
                     }
                 }
-                catch (Exception ex)
-                {
-                    TempData["Error"] = ex.Message;
-                }
+                catch (Exception ex) { TempData["Error"] = ex.Message; }
             }
 
             return RedirectToAction("GestionarSemillero", new { seccionCargada = "investigadores", idSemilleroSeccion4 = idSemilleroSeleccionado });
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                db.Dispose();
+            }
+            base.Dispose(disposing);
         }
 
         // =========================================================================
@@ -600,13 +630,28 @@ namespace GestionSemillero1.Controllers
         {
             ViewBag.PestañaCargada = string.IsNullOrEmpty(pestañaActiva) ? "proyectos" : pestañaActiva;
 
+            // Obtener ID del líder actual desde la sesión
+            decimal idUsuarioActual = Convert.ToDecimal(Session["IDUsuario"]);
+            var idSemilleroLider = db.investigadores
+                                     .Where(i => i.ID_usuario == idUsuarioActual)
+                                     .Select(i => i.ID_semillero)
+                                     .FirstOrDefault();
+
             try
             {
-                ViewBag.SemillerosDisponibles = db.semillero.ToList() ?? new List<semillero>();
-                ViewBag.ProyectosDisponibles = db.Proyectos.ToList() ?? new List<Proyecto>();
-                ViewBag.FasesDisponibles = db.FasesProyecto.ToList() ?? new List<FaseProyecto>();
-                ViewBag.ListaProyectos = db.Proyectos.ToList() ?? new List<Proyecto>();
+                // 1. Datos Filtrados por Semillero
+                ViewBag.SemillerosDisponibles = db.semillero.Where(s => s.ID_semillero == idSemilleroLider).ToList();
 
+                ViewBag.ListaProyectos = db.Proyectos
+                                           .Where(p => p.ID_semillero == idSemilleroLider)
+                                           .ToList() ?? new List<Proyecto>();
+
+                ViewBag.FasesDisponibles = (from f in db.FasesProyecto
+                                            join p in db.Proyectos on f.ID_proyecto equals p.ID_proyecto
+                                            where p.ID_semillero == idSemilleroLider
+                                            select f).ToList() ?? new List<FaseProyecto>();
+
+                // 2. Cálculos de IDs Incrementales
                 decimal nextProyectoId = 101;
                 var ultProyecto = db.Proyectos.OrderByDescending(p => p.ID_proyecto).FirstOrDefault();
                 if (ultProyecto != null) nextProyectoId = ultProyecto.ID_proyecto + 1;
@@ -622,10 +667,11 @@ namespace GestionSemillero1.Controllers
                 if (ultAct != null) nextActividadId = ultAct.ID_activida_proyecto + 1;
                 ViewBag.NextActividadID = nextActividadId;
 
+                // 3. Listas Aplanadas con ExpandoObject (Filtro aplicado por ID_semillero)
                 var queryFases = (from f in db.FasesProyecto
-                                  join p in db.Proyectos on f.ID_proyecto equals p.ID_proyecto into joined
-                                  from p in joined.DefaultIfEmpty()
-                                  select new { f.ID_fase_proyecto, f.nombre_fase_proyecto, f.descripcion_fase_proyecto, NombreProyecto = p != null ? p.nombre_proyecto : "Sin proyecto" }).ToList();
+                                  join p in db.Proyectos on f.ID_proyecto equals p.ID_proyecto
+                                  where p.ID_semillero == idSemilleroLider
+                                  select new { f.ID_fase_proyecto, f.nombre_fase_proyecto, f.descripcion_fase_proyecto, p.nombre_proyecto }).ToList();
 
                 ViewBag.ListaFases = queryFases.Select(x =>
                 {
@@ -633,14 +679,15 @@ namespace GestionSemillero1.Controllers
                     expando.ID_fase_proyecto = x.ID_fase_proyecto;
                     expando.nombre_fase_proyecto = x.nombre_fase_proyecto;
                     expando.descripcion_fase_proyecto = x.descripcion_fase_proyecto;
-                    expando.nombre_proyecto = x.NombreProyecto;
+                    expando.nombre_proyecto = x.nombre_proyecto;
                     return expando;
                 }).ToList();
 
                 var queryActividades = (from a in db.ActividadesProyecto
-                                        join f in db.FasesProyecto on a.ID_fase_proyecto equals f.ID_fase_proyecto into joined
-                                        from f in joined.DefaultIfEmpty()
-                                        select new { a.ID_activida_proyecto, a.nombre_actividad_proyecto, a.descripcion_actividad_proyecto, a.fecha_inicio_actividad_proyecto, a.fecha_fin_actividad_proyecto, NombreFase = f != null ? f.nombre_fase_proyecto : "Sin fase" }).ToList();
+                                        join f in db.FasesProyecto on a.ID_fase_proyecto equals f.ID_fase_proyecto
+                                        join p in db.Proyectos on f.ID_proyecto equals p.ID_proyecto
+                                        where p.ID_semillero == idSemilleroLider
+                                        select new { a.ID_activida_proyecto, a.nombre_actividad_proyecto, a.descripcion_actividad_proyecto, a.fecha_inicio_actividad_proyecto, a.fecha_fin_actividad_proyecto, f.nombre_fase_proyecto }).ToList();
 
                 ViewBag.ListaActividades = queryActividades.Select(x =>
                 {
@@ -650,18 +697,18 @@ namespace GestionSemillero1.Controllers
                     expando.descripcion_actividad_proyecto = x.descripcion_actividad_proyecto;
                     expando.fecha_inicio_actividad_proyecto = x.fecha_inicio_actividad_proyecto;
                     expando.fecha_fin_actividad_proyecto = x.fecha_fin_actividad_proyecto;
-                    expando.nombre_fase_proyecto = x.NombreFase;
+                    expando.nombre_fase_proyecto = x.nombre_fase_proyecto;
                     return expando;
                 }).ToList();
             }
             catch (Exception)
             {
-                if (ViewBag.SemillerosDisponibles == null) ViewBag.SemillerosDisponibles = new List<semillero>();
-                if (ViewBag.ProyectosDisponibles == null) ViewBag.ProyectosDisponibles = new List<Proyecto>();
-                if (ViewBag.FasesDisponibles == null) ViewBag.FasesDisponibles = new List<FaseProyecto>();
-                if (ViewBag.ListaProyectos == null) ViewBag.ListaProyectos = new List<Proyecto>();
-                if (ViewBag.ListaFases == null) ViewBag.ListaFases = new List<object>();
-                if (ViewBag.ListaActividades == null) ViewBag.ListaActividades = new List<object>();
+                // Fallback de seguridad si algo falla en la BD
+                ViewBag.SemillerosDisponibles = new List<semillero>();
+                ViewBag.ListaProyectos = new List<Proyecto>();
+                ViewBag.FasesDisponibles = new List<FaseProyecto>();
+                ViewBag.ListaFases = new List<object>();
+                ViewBag.ListaActividades = new List<object>();
             }
         }
 

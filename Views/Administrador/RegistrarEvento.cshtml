@@ -39,12 +39,34 @@
         background: #cbd5e1;
         border-radius: 10px;
     }
+
+    /* Estilos del Encabezado de Sección */
+    .header-icon-box {
+        background-color: #d1e7dd; /* Verde sutil institucional */
+        color: #198754;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+    }
 </style>
 
 <div class="container-fluid px-2" style="font-size: 0.9rem;">
 
-  
+    <!-- TÍTULO Y ENCABEZADO DE SECCIÓN -->
+    <div class="d-flex align-items-center mb-4 mt-2">
+        <div class="header-icon-box me-3 shadow-sm">
+            <i class="bi bi-calendar-event-fill fs-3"></i>
+        </div>
+        <div>
+            <h4 class="fw-bold mb-1" style="color: #2c3e50;">Módulo de Gestión de Eventos</h4>
+            <p class="text-muted mb-0">Administre el cronograma institucional, programe nuevas ponencias y asocie eventos a los semilleros.</p>
+        </div>
+    </div>
 
+    <!-- Alertas del Sistema -->
     @if (TempData["ErrorEvento"] != null)
     {
         <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
@@ -61,10 +83,12 @@
     }
 
     <div class="row g-4">
+        <!-- Panel Izquierdo: Filtros y Registro -->
         <div class="col-md-4">
 
+            <!-- Búsqueda de Eventos -->
             <div class="card dashboard-card shadow-sm p-4 mb-4 bg-white">
-                <h5 class="card-title fw-bold text-dark mb-3" style="font-size: 1.05rem;"><i class="bi bi-search me-2 text-primary"></i>BÚSQUEDA DE EVENTOS</h5>
+                <h5 class="card-title fw-bold text-dark mb-3" style="font-size: 1.05rem;"><i class="bi bi-search me-2 text-success"></i>BÚSQUEDA DE EVENTOS</h5>
                 @using (Html.BeginForm("RegistrarEvento", "Administrador", FormMethod.Get))
                 {
                     <div class="mb-3">
@@ -83,12 +107,13 @@
                         <input type="date" name="fechaFiltro" class="form-control form-control-sm" value="@ViewBag.FechaFiltrada" />
                     </div>
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-sm btn-success text-white fw-bold py-2"><i class="bi bi-funnel-fill me-2"></i>Buscar con filtro</button>
+                        <button type="submit" class="btn btn-sm btn-success text-white fw-bold py-2" style="background-color: #198754; border: none;"><i class="bi bi-funnel-fill me-2"></i>Buscar con filtro</button>
                         <a href="@Url.Action("RegistrarEvento","Administrador")" class="btn btn-outline-secondary btn-sm py-1.5"><i class="bi bi-arrow-clockwise me-1"></i>Limpiar filtros</a>
                     </div>
                 }
             </div>
 
+            <!-- Registro de Eventos -->
             <div class="card dashboard-card shadow-sm p-4 bg-white">
                 <h5 id="tituloFormulario" class="card-title fw-bold text-dark mb-3" style="font-size: 1.05rem;"><i class="bi bi-calendar-plus me-2 text-success"></i>REGISTRAR EVENTO</h5>
                 @using (Html.BeginForm("GuardarEvento", "Administrador", FormMethod.Post, new { id = "formEvento" }))
@@ -123,18 +148,19 @@
                         </select>
                     </div>
                     <div class="d-grid gap-2">
-                        <button type="submit" id="btnSubmitForm" class="btn btn-sm btn-primary fw-bold py-2 shadow-sm">Guardar Registro</button>
+                        <button type="submit" id="btnSubmitForm" class="btn btn-sm btn-success text-white fw-bold py-2 shadow-sm" style="background-color: #198754; border: none;">Guardar Registro</button>
                         <button type="button" id="btnCancelarEdicion" class="btn btn-secondary btn-sm d-none" onclick="location.reload()">Cancelar Edición</button>
                     </div>
                 }
             </div>
         </div>
 
+        <!-- Panel Derecho: Tabla de Cronograma -->
         <div class="col-md-8">
             <div class="card dashboard-card shadow-sm p-4 bg-white h-100">
                 <div class="box-title d-flex justify-content-between align-items-center mb-3">
-                    <span class="fw-bold text-dark fs-6"><i class="bi bi-calendar3 text-primary me-2"></i>CRONOGRAMA INSTITUCIONAL DE EVENTOS Y PONENCIAS</span>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1.5 fw-bold">@eventos.Count() Activos</span>
+                    <span class="fw-bold text-dark fs-6"><i class="bi bi-calendar3 text-success me-2"></i>CRONOGRAMA INSTITUCIONAL DE EVENTOS Y PONENCIAS</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-bold">@eventos.Count() Activos</span>
                 </div>
 
                 <div class="table-responsive rounded border custom-scrollbar">
@@ -160,10 +186,14 @@
                                     <td class="fw-bold text-secondary font-monospace">#@e.ID_evento</td>
                                     <td class="fw-bold text-dark">@e.nombre_evento</td>
                                     <td class="text-muted small text-wrap" style="max-width: 220px;">@e.descripción_evento</td>
-                                    <td class="text-center"><span class="badge bg-light text-primary border border-primary-subtle px-2 py-1fw-bold"><i class="bi bi-calendar-event me-1"></i>@e.fecha_evento.ToString("yyyy-MM-dd")</span></td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-primary border border-primary-subtle px-2 py-1 fw-bold">
+                                            <i class="bi bi-calendar-event me-1"></i>@e.fecha_evento.ToString("yyyy-MM-dd")
+                                        </span>
+                                    </td>
                                     <td class="text-success fw-bold"><i class="bi bi-tree-fill small me-1"></i>@e.nombre_semillero</td>
                                     <td class="text-center" style="width: 110px;">
-                                        <button type="button" class="btn btn-sm btn-warning me-1" onclick="cargarEventoParaEditar('@e.ID_evento', '@e.nombre_evento', '@e.descripción_evento', '@e.fecha_evento.ToString("yyyy-MM-dd")', '@e.ID_semillero')">
+                                        <button type="button" class="btn btn-sm btn-warning me-1 text-white" onclick="cargarEventoParaEditar('@e.ID_evento', '@e.nombre_evento', '@e.descripción_evento', '@e.fecha_evento.ToString("yyyy-MM-dd")', '@e.ID_semillero')">
                                             <i class="bi bi-pencil"></i>
                                         </button>
                                         @using (Html.BeginForm("GuardarEvento", "Administrador", FormMethod.Post, new { style = "display:inline", novalidate = "novalidate" }))
@@ -225,7 +255,8 @@
         document.getElementById("tituloFormulario").innerHTML = '<i class="bi bi-pencil-square me-2 text-warning"></i>MODIFICAR EVENTO SELECCIONADO';
         var btn = document.getElementById("btnSubmitForm");
         btn.innerText = "Actualizar Cambios";
-        btn.classList.replace('btn-primary', 'btn-warning');
+        btn.classList.replace('btn-success', 'btn-warning');
+        btn.style.backgroundColor = ""; // Limpia el estilo en línea para que tome el de warning
         document.getElementById("btnCancelarEdicion").classList.remove('d-none');
 
         // Desplazamiento suave para enfocar el formulario

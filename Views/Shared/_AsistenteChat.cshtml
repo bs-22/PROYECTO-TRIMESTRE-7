@@ -1,0 +1,53 @@
+﻿<button id="btnChatBot" type="button" style="position:fixed; bottom:20px; right:20px; z-index:9999; background:#278a5f; color:white; border-radius:50%; width:60px; height:60px; border:none; box-shadow:0 4px 10px rgba(0,0,0,0.2);">
+    <i class="bi bi-chat-dots-fill fs-3"></i>
+</button>
+
+<div id="ventanaChat" style="display:none; position:fixed; bottom:90px; right:20px; width:300px; height:400px; background:white; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.3); z-index:9999; overflow:hidden; border:1px solid #ddd;">
+    <div style="background:#278a5f; color:white; padding:10px; font-weight:bold; display:flex; justify-content:space-between;">
+        <span>Asistente IA</span>
+        <span onclick="document.getElementById('ventanaChat').style.display='none'" style="cursor:pointer;">&times;</span>
+    </div>
+    <div id="historialChat" style="height:280px; overflow-y:auto; padding:10px; font-size:0.9rem; background:#f9f9f9;"></div>
+    <div style="padding:10px; border-top:1px solid #eee; display:flex;">
+        <input type="text" id="inputPregunta" placeholder="Escribe tu duda..." style="width:100%; border:1px solid #ccc; padding:5px; border-radius:5px 0 0 5px;">
+        <button id="btnEnviar" style="background:#278a5f; color:white; border:none; padding:5px 10px; border-radius:0 5px 5px 0;">Enviar</button>
+    </div>
+</div>
+
+<script>
+    // Mostrar/Ocultar ventana
+    document.getElementById("btnChatBot").onclick = function() {
+        var chat = document.getElementById("ventanaChat");
+        chat.style.display = (chat.style.display === "none") ? "block" : "none";
+    };
+
+    // Lógica de envío
+    $(document).ready(function() {
+        $("#btnEnviar").click(function() {
+            var input = $("#inputPregunta");
+            var pregunta = input.val();
+            if (!pregunta.trim()) return;
+
+            var historial = $("#historialChat");
+            historial.append("<p><b>Tú:</b> " + pregunta + "</p>");
+            input.val("");
+
+            $.ajax({
+                url: '@Url.Action("ConsultarAsistente", "Ai")',
+                type: 'POST',
+                data: { pregunta: pregunta },
+                success: function(data) {
+                    if (data.success) {
+                        historial.append("<p style='color:#278a5f;'><b>Samy:</b> " + data.mensaje + "</p>");
+                    } else {
+                        historial.append("<p style='color:red;'><b>Error:</b> " + data.mensaje + "</p>");
+                    }
+                    historial.scrollTop(historial[0].scrollHeight);
+                },
+                error: function() {
+                    historial.append("<p style='color:red;'>Error de conexión con el servidor.</p>");
+                }
+            });
+        });
+    });
+</script>
