@@ -21,11 +21,11 @@ namespace GestionSemillero1.Controllers
         public async Task<ActionResult> ConsultarAsistente(string pregunta)
         {
             // 1. Validación de Sesión
-            if (Session["UserId"] == null)
+            if (Session["IDUsuario"] == null)
                 return Json(new { success = true, mensaje = "Tu sesión ha expirado, por favor inicia sesión nuevamente." });
 
-            int idUsuario = Convert.ToInt32(Session["UserId"]);
-            string rol = Session["Rol"]?.ToString();
+            int idUsuario = Convert.ToInt32(Session["IDUsuario"]);
+            string rol = Session["TipoUsuario"]?.ToString();
             string datosContexto = "No se encontraron datos.";
 
             // 2. Lógica por Rol (Basada en tu DB)

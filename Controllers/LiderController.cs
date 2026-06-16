@@ -862,87 +862,92 @@ namespace GestionSemillero1.Controllers
         }
 
 
-        //REPORTE 
-        // 1. GET: Administrador/Reportes
+        // =========================================================================
+        // 🖨️ MÓDULO DE REPORTES EXCLUSIVOS DEL LÍDER
+        // =========================================================================
+
+        // 1. GET: Lider/Reportes
         public ActionResult Reportes()
         {
-            using (var db = new DbSemillero()) // REEMPLAZA por tu DbContext real
-            {
-                // Métricas rápidas para las tarjetas informativas de la vista
-                ViewBag.TotalSemilleros = db.semillero.Count();
-                ViewBag.TotalUsuarios = db.Usuarios.Count(); // Ajusta según tu tabla de usuarios
-            }
+            if (Session["IDUsuario"] == null) return RedirectToAction("Login", "Account");
             return View();
         }
 
-        // 2. POST: Administrador/GenerarCrystalReport
+        // 2. POST: Lider/GenerarCrystalReport
         [HttpPost]
         public ActionResult GenerarCrystalReport(string nombreReporte)
         {
+            if (Session["IDUsuario"] == null) return RedirectToAction("Login", "Account");
+
+            decimal idLiderActual = Convert.ToDecimal(Session["IDUsuario"]);
+
             try
             {
-                ReportDocument reportDocument = new ReportDocument();
+                // 1. Obtener el ID del Semillero que administra este líder
+                var idSemilleroLider = db.investigadores
+                                         .Where(i => i.ID_usuario == idLiderActual)
+                                         .Select(i => i.ID_semillero)
+                                         .FirstOrDefault();
 
-                // Mapeo de la ruta física de tus plantillas .rpt en el servidor
+                if (idSemilleroLider == 0)
+                {
+                    TempData["Error"] = "No se encontró un semillero asignado a su perfil de líder.";
+                    return RedirectToAction("Reportes");
+                }
+
+                ReportDocument reportDocument = new ReportDocument();
                 string rutaReporte = Path.Combine(Server.MapPath("~/Reports"), nombreReporte + ".rpt");
 
                 if (!System.IO.File.Exists(rutaReporte))
                 {
-                    TempData["Error"] = "El archivo físico " + nombreReporte + ".rpt no se encuentra en la carpeta /Reports.";
+                    TempData["Error"] = "El archivo de plantilla " + nombreReporte + ".rpt aún no ha sido diseñado en la carpeta /Reports.";
                     return RedirectToAction("Reportes");
                 }
 
                 reportDocument.Load(rutaReporte);
 
-                using (var db = new DbSemillero()) // REEMPLAZA por tu DbContext real
+                // 2. Filtramos la data EXACTA según el reporte solicitado y el ID del Semillero
+                switch (nombreReporte)
                 {
-                    // Lógica de datos parametrizada según lo solicitado
-                    switch (nombreReporte)
-                    {
-                        case "Reporte_Investigadores_General":
-                            // 1. Reporte de todos los investigadores de todos los semilleros
-                            var investigadores = db.Usuarios.Where(u => u.tipo_usuario == "Investigador").ToList();
-                            reportDocument.SetDataSource(investigadores);
-                            break;
+                    case "Reporte_Mis_Investigadores":
+                        var misInvestigadores = db.investigadores.Where(i => i.ID_semillero == idSemilleroLider).ToList();
+                        reportDocument.SetDataSource(misInvestigadores);
+                        break;
 
-                        case "Reporte_Lideres_General":
-                            // 2. Reporte de todos los líderes instructores
-                            var lideres = db.Usuarios.Where(u => u.tipo_usuario == "Lider").ToList();
-                            reportDocument.SetDataSource(lideres);
-                            break;
+                    case "Reporte_Mis_Proyectos":
+                        var misProyectos = db.Proyectos.Where(p => p.ID_semillero == idSemilleroLider).ToList();
+                        reportDocument.SetDataSource(misProyectos);
+                        break;
 
-                        case "Reporte_Semilleros_Lineas":
-                            // 3. Conteo de semilleros totales y sus líneas de investigación
-                            var semilleros = db.semillero.ToList();
-                            reportDocument.SetDataSource(semilleros);
-                            break;
+                    case "Reporte_Avance_Fases":
+                        var misFases = (from f in db.FasesProyecto
+                                        join p in db.Proyectos on f.ID_proyecto equals p.ID_proyecto
+                                        where p.ID_semillero == idSemilleroLider
+                                        select f).ToList();
+                        reportDocument.SetDataSource(misFases);
+                        break;
 
-                        case "Reporte_Proyectos_Eventos":
-                            // 4. Reporte combinado de proyectos y eventos registrados en el sistema
-                            var proyectos = db.Database.SqlQuery<Proyecto>("SELECT * FROM proyecto").ToList();
-                            reportDocument.SetDataSource(proyectos);
-                            break;
+                    case "Reporte_Asistencia_Reuniones":
+                        var misReuniones = db.Reunion.Where(r => r.ID_semillero == idSemilleroLider).ToList();
+                        reportDocument.SetDataSource(misReuniones);
+                        break;
 
-                        case "Reporte_Reuniones_Por_Semillero":
-                            // 5. Reporte de cuántas reuniones tiene agendadas cada semillero
-                            var reuniones = db.Database.SqlQuery<Reunion>("SELECT * FROM Reunion").ToList();
-                            reportDocument.SetDataSource(reuniones);
-                            break;
-                    }
+                    case "Reporte_Mis_Eventos":
+                        var misEventos = db.Eventos.Where(e => e.ID_semillero == idSemilleroLider).ToList();
+                        reportDocument.SetDataSource(misEventos);
+                        break;
                 }
 
-                // Compilación y conversión nativa del reporte de Crystal Reports a PDF
+                // 3. Exportar a PDF
                 Stream stream = reportDocument.ExportToStream(ExportFormatType.PortableDocFormat);
                 stream.Seek(0, SeekOrigin.Begin);
 
-                string nombreArchivoDescarga = nombreReporte + "_" + DateTime.Now.ToString("yyyyMMdd") + ".pdf";
-
-                // Retorna el archivo PDF directo para descarga o visualización limpia
-                return File(stream, "application/pdf", nombreArchivoDescarga);
+                string nombreArchivo = nombreReporte + "_" + DateTime.Now.ToString("yyyyMMdd") + ".pdf";
+                return File(stream, "application/pdf", nombreArchivo);
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Error al compilar en el motor de Crystal Reports: " + ex.Message;
+                TempData["Error"] = "Error al generar el reporte PDF: " + ex.Message;
                 return RedirectToAction("Reportes");
             }
         }

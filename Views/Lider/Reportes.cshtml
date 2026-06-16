@@ -1,6 +1,7 @@
 ﻿@{
-    ViewBag.Title = "Central de Reportes Institucionales";
-    Layout = "~/Views/Shared/_LayoutAdministrador.cshtml";
+    ViewBag.Title = "Mis Reportes de Semillero";
+    // CORRECCIÓN 1: Apuntar al Layout del Líder
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <style>
@@ -10,6 +11,7 @@
         border-radius: 12px;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         cursor: pointer;
+        text-decoration: none !important; /* Asegura que no haya subrayados */
     }
 
         .card-btn-reporte:hover {
@@ -30,11 +32,11 @@
 
     <div class="d-flex align-items-center mb-4">
         <div class="p-2 bg-success-subtle text-success rounded-3 me-3">
-            <i class="bi bi-printer-fill fs-4"></i>
+            <i class="bi bi-file-earmark-pdf-fill fs-4"></i>
         </div>
         <div>
-            <h4 class="fw-bold text-dark m-0">Módulo de Impresión y Reportes Dinámicos</h4>
-            <small class="text-muted">Seleccione un formato preestablecido de Crystal Reports para compilar los entregables PDF.</small>
+            <h4 class="fw-bold text-dark m-0">Reportes de mi Semillero</h4>
+            <small class="text-muted">Genere documentos PDF con la información exclusiva de su grupo de investigación.</small>
         </div>
     </div>
 
@@ -45,75 +47,73 @@
         </div>
     }
 
-    @using (Html.BeginForm("GenerarCrystalReport", "Administrador", FormMethod.Post, new { id = "formCrystalReport" }))
+    @using (Html.BeginForm("GenerarCrystalReport", "Lider", FormMethod.Post, new { id = "formCrystalReport" }))
     {
         <input type="hidden" id="nombreReporte" name="nombreReporte" value="" />
 
         <div class="row g-3">
 
             <div class="col-md-4">
-                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-primary" onclick="descargarReportePDF('Reporte_Investigadores_General')">
+                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-primary" onclick="descargarReportePDF('Reporte_Mis_Investigadores')">
                     <div class="d-flex align-items-center">
                         <div class="badge-icon bg-primary-subtle text-primary rounded-3 me-3"><i class="bi bi-people-fill fs-5"></i></div>
                         <div>
-                            <h6 class="fw-bold text-dark m-0">Investigadores Generales</h6>
-                            <small class="text-muted">Lista total de aprendices por semillero.</small>
+                            <h6 class="fw-bold text-dark m-0">Mis Investigadores</h6>
+                            <small class="text-muted">Directorio y datos de sus aprendices.</small>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-warning" onclick="descargarReportePDF('Reporte_Lideres_General')">
+                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-warning" onclick="descargarReportePDF('Reporte_Mis_Proyectos')">
                     <div class="d-flex align-items-center">
-                        <div class="badge-icon bg-warning-subtle text-warning rounded-3"><i class="bi bi-person-workspace fs-5"></i></div>
+                        <div class="badge-icon bg-warning-subtle text-warning rounded-3"><i class="bi bi-lightbulb-fill fs-5"></i></div>
                         <div class="ms-3">
-                            <h6 class="fw-bold text-dark m-0">Líderes de Investigación</h6>
-                            <small class="text-muted">Instructores asignados a proyectos.</small>
+                            <h6 class="fw-bold text-dark m-0">Proyectos Activos</h6>
+                            <small class="text-muted">Listado de proyectos y fechas límite.</small>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-success" onclick="descargarReportePDF('Reporte_Semilleros_Lineas')">
+                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-success" onclick="descargarReportePDF('Reporte_Avance_Fases')">
                     <div class="d-flex align-items-center">
-                        <div class="badge-icon bg-success-subtle text-success rounded-3"><i class="bi bi-tree-fill fs-5"></i></div>
+                        <div class="badge-icon bg-success-subtle text-success rounded-3"><i class="bi bi-list-check fs-5"></i></div>
                         <div class="ms-3">
-                            <h6 class="fw-bold text-dark m-0">Semilleros y Temáticas</h6>
-                            <small class="text-muted">Conteo de semilleros y sus líneas.</small>
+                            <h6 class="fw-bold text-dark m-0">Fases y Actividades</h6>
+                            <small class="text-muted">Avance detallado de tareas por proyecto.</small>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-info" onclick="descargarReportePDF('Reporte_Proyectos_Eventos')">
+                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-info" onclick="descargarReportePDF('Reporte_Asistencia_Reuniones')">
                     <div class="d-flex align-items-center">
-                        <div class="badge-icon bg-info-subtle text-info rounded-3"><i class="bi bi-collection-fill fs-5"></i></div>
+                        <div class="badge-icon bg-info-subtle text-info rounded-3"><i class="bi bi-calendar-check-fill fs-5"></i></div>
                         <div class="ms-3">
-                            <h6 class="fw-bold text-dark m-0">Proyectos y Eventos</h6>
-                            <small class="text-muted">Simposios y planes de desarrollo.</small>
+                            <h6 class="fw-bold text-dark m-0">Control de Reuniones</h6>
+                            <small class="text-muted">Historial de comités y control de asistencia.</small>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-secondary" onclick="descargarReportePDF('Reporte_Reuniones_Por_Semillero')">
+                <div class="card card-btn-reporte shadow-sm p-3 bg-white border-start border-4 border-secondary" onclick="descargarReportePDF('Reporte_Mis_Eventos')">
                     <div class="d-flex align-items-center">
-                        <div class="badge-icon bg-secondary-subtle text-secondary rounded-3"><i class="bi bi-calendar-range-fill fs-5"></i></div>
+                        <div class="badge-icon bg-secondary-subtle text-secondary rounded-3"><i class="bi bi-ticket-detailed-fill fs-5"></i></div>
                         <div class="ms-3">
-                            <h6 class="fw-bold text-dark m-0">Volumen de Reuniones</h6>
-                            <small class="text-muted">Cantidad de comités por semillero.</small>
+                            <h6 class="fw-bold text-dark m-0">Cronograma de Eventos</h6>
+                            <small class="text-muted">Próximos simposios o talleres asignados.</small>
                         </div>
                     </div>
                 </div>
             </div>
 
         </div>
-
-        <button type="button" id="btnGenerarReporteGeneral" class="d-none" onclick="descargarReportePDF('Reporte_Semilleros_Lineas')"></button>
     }
 </div>
 
