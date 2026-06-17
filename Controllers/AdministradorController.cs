@@ -210,6 +210,30 @@ namespace GestionSemillero1.Controllers
             }
         }
 
+
+
+        [HttpGet]
+        public JsonResult VerificarDisponibilidad(DateTime fecha, string horaInicio, string horaFin, int idReunionActual = 0)
+        {
+            // Buscamos los IDs de las reuniones que chocan en fecha y hora
+            // Se ignora la 'idReunionActual' para que al editar una reunión no bloquee a sus propios participantes
+            var reunionesConflictivas = db.Reunion
+                .Where(r => r.fecha_reunion == fecha
+                         && r.hora_reunion == horaInicio
+                         && r.ID_reunion != idReunionActual)
+                .Select(r => r.ID_reunion)
+                .ToList();
+
+            // Obtenemos los IDs de los usuarios que asisten a esas reuniones conflictivas
+            var usuariosOcupados = db.AsistenciaReunion
+                .Where(a => reunionesConflictivas.Contains(a.ID_reunion))
+                .Select(a => a.ID_usuario)
+                .Distinct()
+                .ToList();
+
+            return Json(usuariosOcupados, JsonRequestBehavior.AllowGet);
+        }
+
         // Actualiza la información del usuario y del investigador mediante peticiones AJAX.
         [HttpPost]
         public JsonResult ActualizarUsuario(UsuarioGestionViewModel model)

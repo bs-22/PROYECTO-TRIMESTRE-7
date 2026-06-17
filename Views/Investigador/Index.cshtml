@@ -54,19 +54,25 @@
                     {
                         foreach (var reunion in Model)
                         {
+                            // LÓGICA DE FECHAS: Comparamos si la fecha de la reunión ya pasó
+                            bool esPasada = reunion.fecha_reunion.Date < DateTime.Today;
+                            string badgeClass = esPasada ? "bg-secondary" : "bg-success";
+                            string textoEstado = esPasada ? "Finalizada" : "Asignada";
+                            string textClass = esPasada ? "text-muted" : "text-dark";
+
                             <tr>
-                                <td><strong>@reunion.ID_reunion</strong></td>
-                                <td>@reunion.fecha_reunion.ToString("dd/MM/yyyy")</td>
-                                <td>@reunion.descripcion_reunion</td>
+                                <td class="@textClass"><strong>@reunion.ID_reunion</strong></td>
+                                <td class="@textClass">@reunion.fecha_reunion.ToString("dd/MM/yyyy")</td>
+                                <td class="@textClass">@reunion.descripcion_reunion</td>
                                 <td>
-                                    <span class="badge bg-info text-dark" style="padding: 6px 10px; font-size: 0.9em;">
+                                    <span class="badge bg-info text-dark" style="padding: 6px 10px; font-size: 0.9em; opacity: @(esPasada ? "0.6" : "1");">
                                         📍 @reunion.lugar_reunion
                                     </span>
                                 </td>
-                                <td>@reunion.hora_reunion</td>
-                                <td>@reunion.hora_fin_reunion</td>
+                                <td class="@textClass">@reunion.hora_reunion</td>
+                                <td class="@textClass">@reunion.hora_fin_reunion</td>
                                 <td style="text-align: center;">
-                                    <span class="badge bg-success" style="padding: 6px 10px; font-size: 0.85em;">Asignada</span>
+                                    <span class="badge @badgeClass" style="padding: 6px 10px; font-size: 0.85em;">@textoEstado</span>
                                 </td>
                             </tr>
                         }

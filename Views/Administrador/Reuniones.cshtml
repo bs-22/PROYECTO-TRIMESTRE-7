@@ -161,6 +161,37 @@
                             {
                                 foreach (var r in Model)
                                 {
+                                    // 🌟 LÓGICA DINÁMICA DE ESTADOS BASADA EN LA FECHA
+                                    DateTime hoy = DateTime.Today;
+                                    DateTime fechaReunion = r.fecha_reunion.Date;
+                                    TimeSpan diferencia = fechaReunion - hoy;
+
+                                    string textoEstado = "";
+                                    string badgeClass = "";
+                                    string textClass = ""; // Para atenuar el texto si ya pasó
+
+                                    if (diferencia.Days < 0)
+                                    {
+                                        // 1. Si la fecha es menor a hoy (ya pasó)
+                                        textoEstado = "Finalizada";
+                                        badgeClass = "bg-secondary-subtle text-secondary border border-secondary-subtle";
+                                        textClass = "text-muted"; // Atenúa el color de la fila
+                                    }
+                                    else if (diferencia.Days >= 0 && diferencia.Days <= 3)
+                                    {
+                                        // 2. Si es hoy o en los próximos 3 días (Cerca)
+                                        textoEstado = "En curso";
+                                        badgeClass = "bg-warning-subtle text-warning border border-warning-subtle";
+                                        textClass = "text-dark";
+                                    }
+                                    else
+                                    {
+                                        // 3. Si faltan más de 3 días (Lejos)
+                                        textoEstado = "Programada";
+                                        badgeClass = "bg-info-subtle text-info border border-info-subtle";
+                                        textClass = "text-dark";
+                                    }
+
                                     <tr class="fila-reunion" style="cursor:pointer"
                                         data-idreunion="@r.ID_reunion"
                                         data-fecha="@r.fecha_reunion.ToString("yyyy-MM-dd")"
@@ -169,26 +200,18 @@
                                         data-horafin="@r.hora_fin_reunion"
                                         data-idsemillero="@r.ID_semillero"
                                         data-desc="@r.descripcion_reunion">
-                                        <td class="fw-bold text-primary font-monospace">#@r.ID_reunion</td>
-                                        <td class="fw-bold text-dark"><i class="bi bi-calendar-event me-1 text-muted"></i>@r.fecha_reunion.ToString("dd/MM/yyyy")</td>
+
+                                        <td class="fw-bold text-primary font-monospace @textClass">#@r.ID_reunion</td>
+                                        <td class="fw-bold @textClass"><i class="bi bi-calendar-event me-1 text-muted"></i>@r.fecha_reunion.ToString("dd/MM/yyyy")</td>
+
                                         <td class="text-center">
-                                            @if (r.estado_reunion == "Finalizada")
-                                            {
-                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fw-bold">Finalizada</span>
-                                            }
-                                            else if (r.estado_reunion == "En curso")
-                                            {
-                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2.5 py-1 rounded-pill fw-bold">En curso</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-info-subtle text-info border border-info-subtle px-2.5 py-1 rounded-pill fw-bold">Iniciada</span>
-                                            }
+                                            <span class="badge @badgeClass px-2.5 py-1 rounded-pill fw-bold">@textoEstado</span>
                                         </td>
-                                        <td class="text-secondary fw-semibold">@r.lugar_reunion</td>
-                                        <td><span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-clock text-muted me-1"></i>@r.hora_reunion</span></td>
-                                        <td><span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-clock-fill text-muted me-1"></i>@r.hora_fin_reunion</span></td>
-                                        <td class="text-center text-muted font-monospace">@r.ID_semillero</td>
+
+                                        <td class="text-secondary fw-semibold @textClass">@r.lugar_reunion</td>
+                                        <td><span class="badge bg-light text-dark border px-2 py-1 @textClass"><i class="bi bi-clock text-muted me-1"></i>@r.hora_reunion</span></td>
+                                        <td><span class="badge bg-light text-dark border px-2 py-1 @textClass"><i class="bi bi-clock-fill text-muted me-1"></i>@r.hora_fin_reunion</span></td>
+                                        <td class="text-center text-muted font-monospace @textClass">@r.ID_semillero</td>
                                     </tr>
                                 }
                             }
@@ -283,7 +306,6 @@
         </div>
     </div>
 </div>
-
 @section Scripts {
     <script>
         $(document).ready(function () {
@@ -322,6 +344,9 @@
                     data: { idReunion: idReunion },
                     success: function (ids) {
                         if(ids) ids.forEach(i => $("#chk_" + i).prop("checked", true));
+
+                        // 👇 ¡AQUÍ ESTÁ EL CAMBIO 1! Llama a la validación al cargar los datos de la fila
+                        verificarDisponibilidadParticipantes();
                     }
                 });
 
@@ -333,6 +358,11 @@
 
                 // Scroll automático suave hacia el formulario
                 $('html, body').animate({ scrollTop: $("#txtTituloFormulario").offset().top - 100 }, 150);
+            });
+
+            // 👇 ¡AQUÍ ESTÁ EL CAMBIO 2! El escuchador para cuando el usuario cambia la fecha o la hora manualmente
+            $("#txtFecha, #txtHora, #txtHoraFin").on("change blur", function() {
+                verificarDisponibilidadParticipantes();
             });
 
             // Validaciones del lado del cliente antes de enviar el formulario por POST
@@ -364,14 +394,60 @@
                     });
                 }
             });
-        });
+        }); // Fin del $(document).ready
+
+        // Función para validar disponibilidad en base de datos
+        function verificarDisponibilidadParticipantes() {
+            var fecha = $("#txtFecha").val();
+            var horaInicio = $("#txtHora").val();
+            var horaFin = $("#txtHoraFin").val();
+            var idReunion = $("#hdnIDReunion").val() || 0;
+
+            if (fecha && horaInicio) {
+                $.ajax({
+                    url: '@Url.Action("VerificarDisponibilidad", "Administrador")',
+                    type: 'GET',
+                    data: {
+                        fecha: fecha,
+                        horaInicio: horaInicio,
+                        horaFin: horaFin,
+                        idReunionActual: idReunion
+                    },
+                    success: function (idsOcupados) {
+                        $(".chk-usuario").prop("disabled", false);
+                        $(".chk-usuario").parent().css("opacity", "1");
+                        $(".badge-ocupado").remove();
+
+                        if (idsOcupados && idsOcupados.length > 0) {
+                            idsOcupados.forEach(function (id) {
+                                var checkbox = $("#chk_" + id);
+                                if (checkbox.length) {
+                                    checkbox.prop("disabled", true);
+                                    checkbox.prop("checked", false);
+                                    checkbox.parent().css("opacity", "0.5");
+                                    checkbox.parent().append(' <span class="badge bg-danger badge-ocupado" style="font-size: 0.6rem; padding: 2px 4px;">Ocupado</span>');
+                                }
+                            });
+                        }
+                    },
+                    error: function() {
+                        console.log("Error al consultar la disponibilidad de los usuarios.");
+                    }
+                });
+            }
+        }
 
         // Función para restaurar la UI al modo de creación limpia
         function resetearFormularioReunion() {
             $("#hdnIDReunion").val("0");
             $("#txtIDVisual").val("");
             $("#formGestion")[0].reset();
+
+            // 👇 ¡AQUÍ ESTÁ EL CAMBIO 3! (Opcional, pero recomendado) Restaurar también los estilos de ocupado al limpiar el form
             $(".chk-usuario").prop("checked", false);
+            $(".chk-usuario").prop("disabled", false);
+            $(".chk-usuario").parent().css("opacity", "1");
+            $(".badge-ocupado").remove();
 
             $("#txtTituloFormulario").html('<i class="bi bi-pencil-square text-success me-2"></i>Detalles y Registro de Comité');
             $("#btnResetForm").addClass("d-none");

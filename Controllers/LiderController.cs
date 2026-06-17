@@ -59,6 +59,26 @@ namespace GestionSemillero1.Controllers
             return Json(asistentesIds, JsonRequestBehavior.AllowGet);
         }
 
+
+        [HttpGet]
+        public JsonResult VerificarDisponibilidad(DateTime fecha, string horaInicio, string horaFin, int idReunionActual = 0)
+        {
+            var reunionesConflictivas = db.Reunion
+                .Where(r => r.fecha_reunion == fecha
+                         && r.hora_reunion == horaInicio
+                         && r.ID_reunion != idReunionActual)
+                .Select(r => r.ID_reunion)
+                .ToList();
+
+            var usuariosOcupados = db.AsistenciaReunion
+                .Where(a => reunionesConflictivas.Contains(a.ID_reunion))
+                .Select(a => a.ID_usuario)
+                .Distinct()
+                .ToList();
+
+            return Json(usuariosOcupados, JsonRequestBehavior.AllowGet);
+        }
+
         // =========================================================================
         // CREAR O ACTUALIZAR REUNIÓN 
         // =========================================================================
@@ -746,18 +766,30 @@ namespace GestionSemillero1.Controllers
                                             select new { a.ID_activida_proyecto, a.nombre_actividad_proyecto, a.descripcion_actividad_proyecto, a.fecha_inicio_actividad_proyecto, a.fecha_fin_actividad_proyecto, f.nombre_fase_proyecto })
                                             .ToList().Select(x => {
                                                 dynamic exp = new ExpandoObject();
-                                                exp.ID_actividad_proyecto = x.ID_activida_proyecto;
+
+                                                // ----------------------------------------------------
+                                                // CORRECCIONES APLICADAS AQUÍ ABAJO
+                                                // ----------------------------------------------------
+                                                exp.ID_activida_proyecto = x.ID_activida_proyecto;
                                                 exp.nombre_actividad_proyecto = x.nombre_actividad_proyecto;
-                                                exp.fecha_inicio = x.fecha_inicio_actividad_proyecto;
-                                                exp.nombre_fase = x.nombre_fase_proyecto;
+                                                exp.descripcion_actividad_proyecto = x.descripcion_actividad_proyecto;
+                                                exp.fecha_inicio_actividad_proyecto = x.fecha_inicio_actividad_proyecto;
+                                                exp.fecha_fin_actividad_proyecto = x.fecha_fin_actividad_proyecto;
+                                                exp.nombre_fase_proyecto = x.nombre_fase_proyecto;
+                                                // ----------------------------------------------------
+
                                                 return exp;
                                             }).ToList();
             }
             catch (Exception)
             {
                 // Bloque de seguridad: En caso de error, inicializa listas vacías para evitar errores de referencia nula en la vista.
-                ViewBag.SemillerosDisponibles = new List<semillero>();
-                // ... (resto de inicializaciones vacías)
+                ViewBag.SemillerosDisponibles = new List<GestionSemillero1.Models.semillero>();
+                ViewBag.ListaProyectos = new List<GestionSemillero1.Models.Proyecto>();
+                ViewBag.ProyectosDisponibles = new List<GestionSemillero1.Models.Proyecto>();
+                ViewBag.FasesDisponibles = new List<GestionSemillero1.Models.FaseProyecto>();
+                ViewBag.ListaFases = new List<dynamic>();
+                ViewBag.ListaActividades = new List<dynamic>();
             }
         }
 

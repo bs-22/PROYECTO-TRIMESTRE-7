@@ -285,12 +285,12 @@
         </div>
     </div>
 </div>
-
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const inputFecha = document.getElementById("fecha_reunion");
         const hoy = new Date().toISOString().split('T')[0];
         inputFecha.setAttribute("min", hoy);
+
         const form = document.getElementById("formReunion");
         form.addEventListener("submit", function (e) {
             if (form.action.includes("EliminarReunion")) return true;
@@ -310,7 +310,55 @@
                 return false;
             }
         });
+
+        // 1. Escuchador para cuando se cambia la fecha o la hora manualmente
+        $("#fecha_reunion, #hora_reunion, #hora_fin_reunion").on("change blur", function() {
+            verificarDisponibilidadParticipantes();
+        });
     });
+
+    // 2. Función principal AJAX adaptada a los IDs de esta vista
+    function verificarDisponibilidadParticipantes() {
+        var fecha = $("#fecha_reunion").val();
+        var horaInicio = $("#hora_reunion").val();
+        var horaFin = $("#hora_fin_reunion").val();
+        var idReunion = $("#ID_reunion").val() || 0;
+
+        if (fecha && horaInicio) {
+            $.ajax({
+                url: '@Url.Action("VerificarDisponibilidad", "Lider")',
+                type: 'GET',
+                data: {
+                    fecha: fecha,
+                    horaInicio: horaInicio,
+                    horaFin: horaFin,
+                    idReunionActual: idReunion
+                },
+                success: function (idsOcupados) {
+                    // Restaurar estado inicial de todos los checks de esta vista (.chk-part)
+                    $(".chk-part").prop("disabled", false);
+                    $(".chk-part").parent().css("opacity", "1");
+                    $(".badge-ocupado").remove();
+
+                    // Bloquear los que vienen ocupados desde la DB
+                    if (idsOcupados && idsOcupados.length > 0) {
+                        idsOcupados.forEach(function (id) {
+                            var checkbox = $("#inv_" + id);
+                            if (checkbox.length) {
+                                checkbox.prop("disabled", true);
+                                checkbox.prop("checked", false);
+                                checkbox.parent().css("opacity", "0.5");
+                                checkbox.parent().append(' <span class="badge bg-danger badge-ocupado ms-2" style="font-size: 0.6rem; padding: 2px 4px;">Ocupado</span>');
+                            }
+                        });
+                    }
+                },
+                error: function() {
+                    console.log("Error al consultar la disponibilidad de los usuarios.");
+                }
+            });
+        }
+    }
 
     function cargarReunionFormulario(row) {
         const data = row.dataset;
@@ -341,6 +389,9 @@
             });
         }
 
+        // 3. Ejecutar la validación justo después de cargar los datos para editar
+        verificarDisponibilidadParticipantes();
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -355,6 +406,11 @@
         document.getElementById("btnCancelar").classList.add("d-none");
         document.getElementById("btnEliminar").classList.add("d-none");
         document.getElementById("formReunion").action = "@Url.Action("ProcesarReunion", "Lider")";
+
+        // 4. Limpiar los bloqueos visuales al cancelar o resetear
+        $(".chk-part").prop("disabled", false);
+        $(".chk-part").parent().css("opacity", "1");
+        $(".badge-ocupado").remove();
     }
 
     function redirigirAEliminar(event) {
@@ -367,7 +423,7 @@
     }
 
     function verFichaTecnicaReunion(e, btn) {
-        e.stopPropagation(); // Evita que se dispare el evento clic de la fila completa
+        e.stopPropagation();
 
         const data = btn.dataset;
 
@@ -378,7 +434,6 @@
         document.getElementById("detEstado").innerText = data.estado;
         document.getElementById("detAsunto").innerText = data.asunto;
 
-        // Carga de Participantes
         document.getElementById("detParticipantes").innerText = data.nombresparticipantes;
 
         const badge = document.getElementById("detEstado");

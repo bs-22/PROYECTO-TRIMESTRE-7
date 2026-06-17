@@ -22,7 +22,6 @@ namespace GestionSemillero1.Services
         {
             try
             {
-                // Definimos un prompt robusto que instruye a la IA sobre su rol y límites
                 string promptFinal = $@"
 Eres 'Samy', el asistente virtual experto en la plataforma 'SemiPlan'.
 ROL DEL USUARIO: {rol}
@@ -43,30 +42,56 @@ INSTRUCCIONES:
 
 Pregunta: {pregunta}";
 
-                string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={_apiKey}";
+                // CORRECCIÓN 1: Modelo actualizado a gemini-1.5-flash
+                string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={_apiKey}";
 
                 var payload = new
                 {
                     contents = new[] {
-                        new { parts = new[] { new { text = promptFinal } } }
-                    }
+                new { parts = new[] { new { text = promptFinal } } }
+            }
                 };
 
                 string jsonContent = JsonConvert.SerializeObject(payload);
                 var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-                HttpResponseMessage response = await client.PostAsync(url, content);
-                string responseBody = await response.Content.ReadAsStringAsync();
+                // CORRECCIÓN 2 y 3: Lógica de reintentos (hasta 3 veces) para manejar el Error 503
+                int maxReintentos = 3;
+                for (int i = 0; i < maxReintentos; i++)
+                {
+                    HttpResponseMessage response = await client.PostAsync(url, content);
 
-                if (!response.IsSuccessStatusCode)
-                    return "Error técnico en la API: " + responseBody;
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string responseBody = await response.Content.ReadAsStringAsync();
+                        JObject json = JObject.Parse(responseBody);
+                        return json["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString() ?? "No hubo respuesta.";
+                    }
 
-                JObject json = JObject.Parse(responseBody);
-                return json["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString() ?? "No hubo respuesta.";
+                    // Si es error 503, esperamos 2 segundos y volvemos a intentar (si no es el último intento)
+                    if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable && i < (maxReintentos - 1))
+                    {
+                        await Task.Delay(2000); // Esperar 2 segundos
+                        continue; // Volver a intentar
+                    }
+
+                    // Si falla por otro motivo o se acaban los reintentos, enviamos mensaje amigable
+                    if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                    {
+                        return "Samy está experimentando una alta demanda en este momento. Por favor, intenta de nuevo en unos segundos.";
+                    }
+
+                    // Para otros errores (400, 401, etc.)
+                    return "Lo siento, tuve un problema técnico al conectarme con mis servidores. Intenta más tarde.";
+                }
+
+                return "No se pudo establecer conexión con el asistente.";
             }
             catch (Exception ex)
             {
-                return "Error crítico: " + ex.Message;
+                // Solo para depuración interna, no mostrar al usuario final
+                System.Diagnostics.Debug.WriteLine("Error crítico: " + ex.Message);
+                return "Ocurrió un error inesperado. Por favor, contacta a soporte.";
             }
         }
     }

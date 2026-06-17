@@ -174,29 +174,62 @@
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>ID PROYECTO</th>
-                                        <th>NOMBRE PROYECTO</th>
-                                        <th>ENFOQUE / ACTIVIDAD</th>
-                                        <th>FECHA INICIO</th>
-                                        <th>FECHA FIN</th>
+                                        <th>ID TAREA</th>
+                                        <th>FASE RELACIONADA</th>
+                                        <th>NOMBRE ACTIVIDAD / COMPROMISO</th>
+                                        <th>INICIO</th>
+                                        <th>FIN</th>
+                                        <th class="text-center">ESTADO</th>
                                         <th class="text-center">ACCIONES</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var p in ViewBag.ListaProyectos)
+                                    @foreach (var a in ViewBag.ListaActividades)
                                     {
+                                        // 🌟 LÓGICA DE ESTADOS BASADA EN FECHAS
+                                        DateTime hoy = DateTime.Today;
+                                        DateTime fIni = (DateTime)a.fecha_inicio_actividad_proyecto;
+                                        DateTime fFin = (DateTime)a.fecha_fin_actividad_proyecto;
+
+                                        string estadoText = "";
+                                        string badgeClass = "";
+
+                                        if (fFin.Date < hoy)
+                                        {
+                                            estadoText = "Vencido";
+                                            badgeClass = "bg-danger-subtle text-danger border border-danger-subtle";
+                                        }
+                                        else if (fIni.Date > hoy)
+                                        {
+                                            estadoText = "Programado";
+                                            badgeClass = "bg-secondary-subtle text-secondary border border-secondary-subtle";
+                                        }
+                                        else
+                                        {
+                                            // Si no ha vencido y ya pasó la fecha de inicio, está en ejecución
+                                            estadoText = "En ejecución";
+                                            badgeClass = "bg-success-subtle text-success border border-success-subtle";
+                                        }
+
                                         <tr>
-                                            <td class="fw-bold text-secondary font-monospace">#@p.ID_proyecto</td>
-                                            <td class="fw-bold text-dark">@p.nombre_proyecto</td>
-                                            <td class="text-muted">@p.actividad_proyecto</td>
-                                            <td><span class="badge bg-light text-dark border"><i class="bi bi-calendar-check text-success me-1"></i>@p.fecha_inicio_proyecto.ToString("yyyy-MM-dd")</span></td>
-                                            <td><span class="badge bg-light text-dark border"><i class="bi bi-calendar-x text-danger me-1"></i>@p.fecha_fin_proyecto.ToString("yyyy-MM-dd")</span></td>
+                                            <td class="fw-bold text-secondary font-monospace">#@a.ID_activida_proyecto</td>
+                                            <td class="text-success fw-bold"><i class="bi bi-bookmark-fill me-1"></i>@a.nombre_fase_proyecto</td>
+                                            <td class="text-dark fw-semibold">@a.nombre_actividad_proyecto</td>
+                                            <td><span class="badge bg-light text-secondary border">@fIni.ToString("yyyy-MM-dd")</span></td>
+                                            <td><span class="badge bg-light text-secondary border">@fFin.ToString("yyyy-MM-dd")</span></td>
+
+                                            <td class="text-center">
+                                                <span class="badge @badgeClass px-3 py-1 rounded-pill fw-bold">@estadoText</span>
+                                            </td>
+
                                             <td class="text-center" style="width: 120px;">
-                                                <button class="btn btn-sm btn-warning me-1" onclick="editarProyecto('@p.ID_proyecto', '@p.nombre_proyecto', '@p.actividad_proyecto', '@p.fecha_inicio_proyecto.ToString("yyyy-MM-dd")', '@p.fecha_fin_proyecto.ToString("yyyy-MM-dd")', '@p.ID_semillero')"><i class="bi bi-pencil"></i></button>
+                                                <button class="btn btn-sm btn-warning me-1" onclick="editarActividad('@a.ID_activida_proyecto', '@a.ID_fase_proyecto', '@a.nombre_actividad_proyecto', '@fIni.ToString("yyyy-MM-dd")', '@fFin.ToString("yyyy-MM-dd")', '@a.descripcion_actividad_proyecto')"><i class="bi bi-pencil"></i></button>
                                                 @using (Html.BeginForm("RegistrarProyecto", "Administrador", FormMethod.Post, new { style = "display:inline", novalidate = "novalidate" }))
                                                 {
-                                                    <input type="hidden" name="tipoSubmit" value="proyectos" /><input type="hidden" name="ID_proyecto" value="@p.ID_proyecto" /><input type="hidden" name="accionCrud" value="eliminar" />
-                                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Está seguro de eliminar este proyecto y todas sus fases asociadas?')"><i class="bi bi-trash"></i></button>
+                                                    <input type="hidden" name="tipoSubmit" value="actividades" />
+                                                    <input type="hidden" name="ID_activida_proyecto" value="@a.ID_activida_proyecto" />
+                                                    <input type="hidden" name="accionCrud" value="eliminar" />
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar esta actividad del cronograma?')"><i class="bi bi-trash"></i></button>
                                                 }
                                             </td>
                                         </tr>
