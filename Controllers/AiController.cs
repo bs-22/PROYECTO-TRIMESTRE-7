@@ -35,41 +35,27 @@ namespace GestionSemillero1.Controllers
                 {
                     case "Investigador":
                         var inv = db.investigadores.FirstOrDefault(i => i.ID_usuario == idUsuario);
-                        if (inv != null)
-                        {
-                            // Filtro: Reuniones propias o donde fue convocado
-                            var misReuniones = db.Reunion
-                                .Where(r => r.ID_semillero == inv.ID_semillero
-                                         || r.AsistenciaReunion.Any(a => a.ID_usuario == idUsuario))
-                                .ToList();
-
-                            datosContexto = misReuniones.Any()
-                                ? "Mis reuniones: " + string.Join("; ", misReuniones.Select(r => $"{r.descripcion_reunion} ({r.fecha_reunion})"))
-                                : "No tienes reuniones asignadas.";
-                        }
+                        int totalReuniones = db.Reunion.Count(r => r.AsistenciaReunion.Any(a => a.ID_usuario == idUsuario));
+                        datosContexto = $"Eres Investigador. Tienes {totalReuniones} reuniones asignadas.";
                         break;
 
                     case "Lider":
-                        // El Líder ve todo lo de su semillero asignado
                         var liderInv = db.investigadores.FirstOrDefault(i => i.ID_usuario == idUsuario);
                         if (liderInv != null)
                         {
-                            var semilleroInfo = db.semillero.FirstOrDefault(s => s.ID_semillero == liderInv.ID_semillero);
-                            var proy = db.Proyectos.Where(p => p.ID_semillero == liderInv.ID_semillero).ToList();
+                            var sem = db.semillero.FirstOrDefault(s => s.ID_semillero == liderInv.ID_semillero);
+                            int cantInvestigadores = db.investigadores.Count(i => i.ID_semillero == liderInv.ID_semillero);
+                            int cantProyectos = db.Proyectos.Count(p => p.ID_semillero == liderInv.ID_semillero);
 
-                            datosContexto = $"Gestionas el semillero: {semilleroInfo?.nombre_semillero}. " +
-                                            $"Proyectos a cargo: {string.Join(", ", proy.Select(p => p.nombre_proyecto))}.";
+                            datosContexto = $"Eres Líder del semillero: {sem?.nombre_semillero}. " +
+                                            $"Tienes {cantInvestigadores} investigadores a cargo y {cantProyectos} proyectos activos.";
                         }
                         break;
 
                     case "Administrador":
-                        // El administrador tiene visión global
                         int totalSemilleros = db.semillero.Count();
-                        datosContexto = $"Eres Administrador. El sistema cuenta con {totalSemilleros} semilleros activos. Tienes acceso total a la configuración y reportes.";
-                        break;
-
-                    default:
-                        datosContexto = "Rol no reconocido. Contacta a soporte.";
+                        int totalInvestigadores = db.investigadores.Count();
+                        datosContexto = $"Eres Administrador. El sistema tiene {totalSemilleros} semilleros y {totalInvestigadores} investigadores en total.";
                         break;
                 }
             }

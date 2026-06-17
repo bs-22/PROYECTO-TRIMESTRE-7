@@ -7,6 +7,8 @@ using System.Web;
 
 namespace GestionSemillero1.Models
 {
+    
+    // Esta tabla actúa como tabla puente para gestionar la asistencia.
     [Table("asistencia_reunion")]
     public class AsistenciaReunion
     {
@@ -15,7 +17,7 @@ namespace GestionSemillero1.Models
         public decimal ID_reunion { get; set; }
 
         [Key]
-        [Column("ID_usuario", Order = 1)] // <-- Cambiado a ID_usuario
+        [Column("ID_usuario", Order = 1)] 
         public decimal ID_usuario { get; set; }
     }
 }

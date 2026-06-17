@@ -13,39 +13,41 @@ namespace GestionSemillero1.Controllers
         private DbSemillero db = new DbSemillero();
 
         // GET: Investigador/Index
+        // Acción principal del Investigador: Lista las reuniones asignadas al usuario logueado con opciones de búsqueda.
         public ActionResult Index(string criterio, string valor)
         {
+            // Validación de seguridad: Verifica que exista una sesión activa.
             if (Session["IDUsuario"] == null) return RedirectToAction("Login", "Account");
 
             decimal idUsuarioActual = Convert.ToDecimal(Session["IDUsuario"]);
 
-            // 1. Consulta base: Filtramos las reuniones asignadas al investigador actual
+            // Consulta LINQ: Une las tablas de reuniones y asistencia para obtener solo los registros vinculados al investigador actual.
             var queryBase = (from r in db.Reunion
                              join a in db.AsistenciaReunion
                              on r.ID_reunion equals a.ID_reunion
                              where a.ID_usuario == idUsuarioActual
                              select r).Distinct();
 
-            // 🌟 NUEVO: Extraer los primeros 5 IDs asignados únicos para el buscador
-            ViewBag.TopIDs = queryBase.Select(r => r.ID_reunion) // Select the decimal ID first
-                           .Distinct()                // Filter unique IDs in the DB
-                           .Take(5)                   // Take top 5 in the DB
-                           .AsEnumerable()            // Bring these 5 numbers into memory
-                           .Select(id => id.ToString()) // Now convert to string safely
-                           .ToList();
-            // 🌟 NUEVO: Extraer las primeras 5 Fechas asignadas únicas
+            // Precarga de filtros (ViewBag): Obtiene los 5 IDs y fechas más recientes para alimentar los buscadores.
+            ViewBag.TopIDs = queryBase.Select(r => r.ID_reunion)
+                            .Distinct()
+                            .Take(5)
+                            .AsEnumerable()
+                            .Select(id => id.ToString())
+                            .ToList();
+
             var fechasRaw = queryBase.Select(r => r.fecha_reunion)
-                                     .Distinct()
-                                     .Take(5)
-                                     .ToList();
+                                    .Distinct()
+                                    .Take(5)
+                                    .ToList();
 
-            // Formateamos las fechas de forma segura a "dd/MM/yyyy" para pasarlas a la vista
+            // Formateo de fechas: Asegura el formato "dd/MM/yyyy" para consistencia en la interfaz.
             ViewBag.TopFechas = fechasRaw
-                                .Select(f => f != null ? Convert.ToDateTime(f).ToString("dd/MM/yyyy") : "")
-                                .Where(x => !string.IsNullOrEmpty(x))
-                                .ToList();
+                               .Select(f => f != null ? Convert.ToDateTime(f).ToString("dd/MM/yyyy") : "")
+                               .Where(x => !string.IsNullOrEmpty(x))
+                               .ToList();
 
-            // 2. Aplicamos la lógica de filtrado sobre el listado final si el usuario buscó algo
+            // Lógica de filtrado: Aplica condiciones dinámicas según el criterio seleccionado (ID o Fecha).
             var reuniones = queryBase.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(valor))
@@ -56,7 +58,7 @@ namespace GestionSemillero1.Controllers
                 }
                 else if (criterio == "Fecha")
                 {
-                    // Intentamos primero el parseo exacto en formato dd/MM/yyyy para evitar choques culturales
+                    // Intenta parsear la fecha exacta respetando el formato regional para evitar errores culturales.
                     if (DateTime.TryParseExact(valor, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime fechaExacta))
                     {
                         reuniones = reuniones.Where(r => r.fecha_reunion == fechaExacta);
@@ -70,10 +72,20 @@ namespace GestionSemillero1.Controllers
 
             return View(reuniones.ToList());
         }
-
+        // Método de limpieza de recursos (Override del método base).
+        // Se ejecuta automáticamente cuando el controlador termina su ciclo de vida (request HTTP finalizado).
         protected override void Dispose(bool disposing)
         {
-            if (disposing) db.Dispose();
+            // Verifica si la propiedad 'disposing' es verdadera, lo que significa que el objeto 
+            // debe liberar explícitamente sus recursos.
+            if (disposing)
+            {
+                // Libera la conexión a la base de datos (db). Esto es crucial para evitar 
+                // "fugas de memoria" o que el pool de conexiones SQL se sature.
+                db.Dispose();
+            }
+
+            // Llama al método Dispose de la clase padre (Controller) para completar la limpieza estándar.
             base.Dispose(disposing);
         }
     }

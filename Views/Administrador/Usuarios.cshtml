@@ -240,11 +240,11 @@
                                     <td class="text-primary fw-semibold">@item.correo_usuario</td>
                                     <td>
                                         @if (item.tipo_usuario == "Administrador")
-                                        {<span class="text-danger fw-bold"><i class="bi bi-shield-lock me-1"></i>Admin</span> }
+                                        {<span class="text-danger fw-bold"><i class="bi bi-shield-lock me-1"></i>Administrador</span> }
                                         else if (item.tipo_usuario == "Lider")
                                         { <span class="text-warning fw-bold"><i class="bi bi-person-workspace me-1"></i>Líder</span> }
                                         else
-                                        { <span class="text-secondary"><i class="bi bi-journal-code me-1"></i>Aprendiz</span>}
+                                        { <span class="text-secondary"><i class="bi bi-journal-code me-1"></i>Investigador</span>}
                                     </td>
                                     <td class="text-center">
                                         @if (item.estado_usuario.ToLower() == "activo")

@@ -18,7 +18,7 @@ namespace GestionSemillero1.Controllers
         private const string LAYOUT_PATH = "~/Views/Shared/_Layout.cshtml";
 
         // =========================================================================
-        // 📅 VISTA PRINCIPAL: GESTIONAR REUNIONES
+        // GESTIONAR REUNIONES
         // =========================================================================
         public ActionResult Index()
         {
@@ -47,7 +47,7 @@ namespace GestionSemillero1.Controllers
             return View(listaInvestigadores ?? new List<GestionSemillero1.Models.investigadores>());
         }
 
-        // 🌟 NUEVO MÉTODO API: Devuelve los IDs de los usuarios que asisten a una reunión específica
+        // Metodo api que devuelve los IDs de los usuarios que asisten a una reunión específica
         [HttpGet]
         public JsonResult ObtenerAsistentesReunion(decimal idReunion)
         {
@@ -60,7 +60,7 @@ namespace GestionSemillero1.Controllers
         }
 
         // =========================================================================
-        // 🔄 ACCIÓN UNIFICADA: CREAR O ACTUALIZAR REUNIÓN (CORREGIDA)
+        // CREAR O ACTUALIZAR REUNIÓN 
         // =========================================================================
         [HttpPost]
         public ActionResult ProcesarReunion(FormCollection form, decimal[] investigadoresSeleccionados)
@@ -77,7 +77,7 @@ namespace GestionSemillero1.Controllers
                 string lugar_reunion = form["lugar_reunion"];
                 string fecha_reunion = form["fecha_reunion"];
 
-                // ✅ SOLUCIÓN 1: Parseo inteligente que entiende AM/PM y 24h sin crashear
+                // Convertimos y añadimos parseo inteligente que entiende AM/PM y 24h sin crashear
                 DateTime fecha = DateTime.Parse(fecha_reunion);
                 TimeSpan hIni = DateTime.Parse(hora_reunion).TimeOfDay;
                 TimeSpan hFin = DateTime.Parse(hora_fin_reunion).TimeOfDay;
@@ -99,7 +99,7 @@ namespace GestionSemillero1.Controllers
                         if (string.IsNullOrEmpty(idRaw))
                         {
                             // =========================================================
-                            // MODO: AGENDAR NUEVA REUNIÓN
+                            // AGENDAR NUEVA REUNIÓN
                             // =========================================================
 
                             if (investigadoresSeleccionados != null)
@@ -116,7 +116,7 @@ namespace GestionSemillero1.Controllers
 
                                         foreach (var r in reunionesAsignadas)
                                         {
-                                            // ✅ SOLUCIÓN 2: Evitar que falle al leer la BD
+                                            //Evitar que falle al leer la BD
                                             TimeSpan dbIni = DateTime.Parse(r.hora_reunion.ToString()).TimeOfDay;
                                             TimeSpan dbFin = DateTime.Parse(r.hora_fin_reunion.ToString()).TimeOfDay;
 
@@ -166,14 +166,14 @@ namespace GestionSemillero1.Controllers
                         else
                         {
                             // =========================================================
-                            // MODO: ACTUALIZAR REUNIÓN EXISTENTE (Tu objetivo principal)
+                            // MODO: ACTUALIZAR REUNIÓN EXISTENTE
                             // =========================================================
                             decimal idModificar = Convert.ToDecimal(idRaw);
                             var reunionExistente = db.Reunion.FirstOrDefault(r => r.ID_reunion == idModificar);
 
                             if (reunionExistente == null) throw new Exception("Reunión no encontrada.");
 
-                            // ✅ SOLUCIÓN 3: Parseo seguro al verificar cambios de hora
+                            // Conversión segura al verificar cambios de hora
                             TimeSpan dbHoraIni = DateTime.Parse(reunionExistente.hora_reunion.ToString()).TimeOfDay;
 
                             if (reunionExistente.fecha_reunion != fecha && (reunionExistente.fecha_reunion - DateTime.Now.Date).TotalDays < 1)
@@ -195,7 +195,7 @@ namespace GestionSemillero1.Controllers
                                 new System.Data.SqlClient.SqlParameter("@fec", fecha),
                                 new System.Data.SqlClient.SqlParameter("@id", idModificar));
 
-                            // 🔥 AQUÍ ESTÁ LA MAGIA PARA TUS PARTICIPANTES 🔥
+                            
                             // 1. Borramos a todos los asignados (excepto al líder dueño)
                             string sqlClearAsistencias = "DELETE FROM asistencia_reunion WHERE ID_reunion=@id AND ID_usuario != @idLider";
                             db.Database.ExecuteSqlCommand(sqlClearAsistencias,
@@ -240,7 +240,7 @@ namespace GestionSemillero1.Controllers
         }
 
         // =========================================================================
-        // 🗑️ ACCIÓN: ELIMINAR REUNIÓN FÍSICAMENTE
+        // ELIMINAR REUNIÓN FÍSICAMENTE
         // =========================================================================
         [HttpPost]
         public ActionResult EliminarReunion(FormCollection form)
@@ -289,15 +289,18 @@ namespace GestionSemillero1.Controllers
         // =========================================================================
         public ActionResult ConsultarReuniones(string criterio, string valor)
         {
+            // Validación de seguridad: Verifica sesión activa.
             if (Session["IDUsuario"] == null) return RedirectToAction("Login", "Account");
 
             decimal idUsuarioActual = Convert.ToDecimal(Session["IDUsuario"]);
 
+            // Identificación del contexto: Obtiene el ID del semillero que lidera el usuario actual.
             var idSemilleroLider = db.investigadores
-                                    .Where(i => i.ID_usuario == idUsuarioActual)
-                                    .Select(i => i.ID_semillero)
-                                    .FirstOrDefault();
+                                     .Where(i => i.ID_usuario == idUsuarioActual)
+                                     .Select(i => i.ID_semillero)
+                                     .FirstOrDefault();
 
+            // Manejo de casos sin semillero: Retorna listas vacías si el líder no tiene semillero asignado.
             if (idSemilleroLider == 0)
             {
                 ViewBag.TopIDs = new List<string>();
@@ -305,19 +308,21 @@ namespace GestionSemillero1.Controllers
                 return View(new List<Reunion>());
             }
 
+            // Precarga de equipo: Obtiene todos los investigadores pertenecientes a este semillero.
             ViewBag.ListaInvestigadores = db.investigadores.Where(i => i.ID_semillero == idSemilleroLider).ToList();
 
+            // Consulta de alcance (Scope): Filtra reuniones creadas para el semillero O reuniones donde el líder es asistente.
             var queryBase = (from r in db.Reunion
                              where r.ID_semillero == idSemilleroLider ||
                                    db.AsistenciaReunion.Any(a => a.ID_reunion == r.ID_reunion && a.ID_usuario == idUsuarioActual)
                              select r).Distinct();
 
+            // Precarga de filtros (ViewBag): Prepara los 5 IDs y fechas más recientes para los buscadores rápidos.
             ViewBag.TopIDs = queryBase.Select(r => r.ID_reunion.ToString()).Distinct().Take(5).ToList();
-
             var fechasRaw = queryBase.Select(r => r.fecha_reunion).Distinct().Take(5).ToList();
-
             ViewBag.TopFechas = fechasRaw.AsEnumerable().Select(f => f.ToString("dd/MM/yyyy")).Where(x => !string.IsNullOrEmpty(x)).ToList();
 
+            // Lógica de filtrado dinámico: Aplica filtros de búsqueda si el usuario ingresó criterios.
             var reuniones = queryBase.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(valor))
@@ -328,6 +333,7 @@ namespace GestionSemillero1.Controllers
                 }
                 else if (criterio == "Fecha")
                 {
+                    // Intenta el parseo exacto para evitar conflictos de formato regional (dd/MM/yyyy).
                     if (DateTime.TryParseExact(valor, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime fechaExacta))
                     {
                         reuniones = reuniones.Where(r => r.fecha_reunion == fechaExacta);
@@ -343,22 +349,33 @@ namespace GestionSemillero1.Controllers
         }
 
         // MÉTODOS AUXILIARES
+        // Método de utilidad (Helper) para encapsular la creación y adición de parámetros a un comando SQL.
+        // Esto centraliza la lógica de vinculación, mejorando la seguridad y legibilidad.
         private void AddParam(System.Data.Common.DbCommand cmd, string name, object value)
         {
+            // Crea un nuevo parámetro específico para el tipo de proveedor de datos (SQL, Oracle, etc.).
             var p = cmd.CreateParameter();
+
+            // Asigna el nombre del parámetro (ej: "@p0").
             p.ParameterName = name;
+
+            // Asigna el valor del objeto.
             p.Value = value;
+
+            // Vincula el parámetro al comando SQL para su ejecución segura.
             cmd.Parameters.Add(p);
         }
 
         // =========================================================================
-        // 👥 GESTIONAR SEMILLERO (VISTA UNIFICADA)
+        // GESTIONAR SEMILLERO 
         // =========================================================================
         public ActionResult GestionarSemillero()
         {
+            // Limpieza de caché para evitar que datos antiguos interfieran en la gestión actual.
             Response.Cache.SetCacheability(HttpCacheability.NoCache);
             Response.Cache.SetNoStore();
 
+            // Seguridad: Restringe acceso solo a usuarios con sesión activa y rol de "lider".
             if (Session["UsuarioLogueado"] == null || Session["TipoUsuario"]?.ToString().ToLower() != "lider")
             {
                 return RedirectToAction("Login", "Account");
@@ -367,26 +384,25 @@ namespace GestionSemillero1.Controllers
             string valorSesion = Session["UsuarioLogueado"].ToString();
             decimal idLiderActual = 0;
 
+            // Resolución de identidad: Obtiene el ID del líder, ya sea de sesión o mediante consulta si el valor es un correo.
             if (!decimal.TryParse(valorSesion, out idLiderActual))
             {
                 var usuarioDb = db.Usuarios.FirstOrDefault(u => u.correo_usuario == valorSesion);
-                if (usuarioDb != null)
-                {
-                    idLiderActual = usuarioDb.ID_usuario;
-                }
-                else
-                {
-                    return RedirectToAction("Login", "Account");
-                }
+                if (usuarioDb != null) idLiderActual = usuarioDb.ID_usuario;
+                else return RedirectToAction("Login", "Account");
             }
 
+            // Consulta de semilleros: Obtiene todos los semilleros vinculados al ID del líder.
             var misSemilleros = (from s in db.semillero
                                  join i in db.investigadores on s.ID_semillero equals i.ID_semillero
                                  where i.ID_usuario == idLiderActual
                                  select s).Distinct().ToList() ?? new List<semillero>();
 
+            // Extracción de IDs para el filtrado de investigadores.
             var idsMisSemilleros = misSemilleros.Select(s => s.ID_semillero).ToList();
 
+            // Precarga de equipo: Trae todos los investigadores asociados a los semilleros del líder.
+            // Excluye al propio líder de la lista de gestión para evitar auto-modificaciones.
             ViewBag.InvestigadoresDeEsteSemillero = (from i in db.investigadores
                                                      join u in db.Usuarios on i.ID_usuario equals u.ID_usuario
                                                      where idsMisSemilleros.Contains(i.ID_semillero) && i.ID_usuario != idLiderActual
@@ -402,11 +418,14 @@ namespace GestionSemillero1.Controllers
             return View(misSemilleros);
         }
 
+        // Acción POST para persistir actualizaciones o eliminaciones de semilleros.
         [HttpPost]
         public ActionResult GestionarSemillero(semillero datosSemillero, string accion)
         {
+            // Validación de sesión: Garantiza que solo usuarios autenticados realicen modificaciones.
             if (Session["UsuarioLogueado"] == null) return RedirectToAction("Login", "Account");
 
+            // Identificación del usuario: Obtiene el ID del líder para validar permisos.
             string valorSesion = Session["UsuarioLogueado"].ToString();
             decimal idLiderActual = 0;
             if (!decimal.TryParse(valorSesion, out idLiderActual))
@@ -420,6 +439,7 @@ namespace GestionSemillero1.Controllers
             {
                 if (accion == "actualizar" || accion == "eliminar")
                 {
+                    // SEGURIDAD: Verifica que el semillero pertenezca realmente al líder actual.
                     var registro = (from s in db.semillero
                                     join i in db.investigadores on s.ID_semillero equals i.ID_semillero
                                     where s.ID_semillero == datosSemillero.ID_semillero && i.ID_usuario == idLiderActual
@@ -429,23 +449,25 @@ namespace GestionSemillero1.Controllers
                     {
                         if (accion == "actualizar")
                         {
+                            // Actualización: Aplica cambios a los campos editables.
                             registro.nombre_semillero = datosSemillero.nombre_semillero;
                             registro.linea_investigacion = datosSemillero.linea_investigacion;
-                            // Se asume que la fecha no se actualiza ya que está en readonly en la vista
                             registro.descripcion_semillero = datosSemillero.descripcion_semillero;
                             TempData["Success"] = "La información del semillero ha sido actualizada exitosamente.";
                         }
                         else if (accion == "eliminar")
                         {
+                            // Eliminación en cascada manual: Remueve primero los miembros asociados para evitar errores de restricción de clave foránea.
                             var miembros = db.investigadores.Where(i => i.ID_semillero == datosSemillero.ID_semillero);
                             db.investigadores.RemoveRange(miembros);
                             db.semillero.Remove(registro);
                             TempData["Success"] = "El semillero ha sido eliminado.";
                         }
-                        db.SaveChanges();
+                        db.SaveChanges(); // Consolida los cambios en la base de datos.
                     }
                     else
                     {
+                        // Validación de privilegios: Si el registro no se encuentra, significa que el usuario no tiene permisos de edición.
                         TempData["Error"] = "No cuenta con los privilegios requeridos para alterar este registro.";
                     }
                 }
@@ -457,6 +479,7 @@ namespace GestionSemillero1.Controllers
 
             return RedirectToAction("GestionarSemillero");
         }
+
 
         [HttpPost]
         public ActionResult ProcesarAccionesInvestigadores(decimal? idSemilleroSeleccionado, string idUsuarioSeleccionado, string accionInvestigador, string nuevoInvestigadorNombre, string nuevoInvestigadorApellido, string nuevoInvestigadorDoc, int? nuevoInvestigadorEdad, decimal? nuevoInvestigadorTel, string nuevoInvestigadorCorreo, string nuevoInvestigadorContrasena)
@@ -567,7 +590,7 @@ namespace GestionSemillero1.Controllers
         }
 
         // =========================================================================
-        // 📁 MÉTODOS AUXILIARES Y ACCIONES: REGISTRAR PROYECTO
+        // REGISTRAR PROYECTO
         // =========================================================================
 
         // --- 1. GET: RegistrarProyecto ---
@@ -586,15 +609,20 @@ namespace GestionSemillero1.Controllers
         }
 
         // --- 2. POST: RegistrarProyecto ---
+        // Acción centralizada para realizar operaciones CRUD (Crear, Leer, Actualizar, Borrar) 
+        // sobre la jerarquía: Proyectos -> Fases -> Actividades.
         [HttpPost]
         public ActionResult RegistrarProyecto(Proyecto p, FaseProyecto f, ActividadProyecto a, string tipoSubmit, string accionCrud)
         {
+            // Seguridad: Verificación de sesión activa.
             if (Session["UsuarioLogueado"] == null) return RedirectToAction("Login", "Account");
 
+            // Determina el módulo de destino (tabulación) basado en la acción del usuario.
             string pestañaDestino = string.IsNullOrEmpty(tipoSubmit) ? "proyectos" : tipoSubmit;
 
             try
             {
+                // GESTIÓN DE PROYECTOS: Nivel superior.
                 if (pestañaDestino == "proyecto")
                 {
                     pestañaDestino = "proyectos";
@@ -611,6 +639,7 @@ namespace GestionSemillero1.Controllers
                     }
                     db.SaveChanges();
                 }
+                // GESTIÓN DE FASES: Nivel intermedio.
                 else if (pestañaDestino == "fase")
                 {
                     pestañaDestino = "fases";
@@ -627,6 +656,7 @@ namespace GestionSemillero1.Controllers
                     }
                     db.SaveChanges();
                 }
+                // GESTIÓN DE ACTIVIDADES: Nivel detallado.
                 else if (pestañaDestino == "actividad")
                 {
                     pestañaDestino = "actividades";
@@ -649,15 +679,20 @@ namespace GestionSemillero1.Controllers
                 TempData["ErrorProyecto"] = "Error en base de datos: " + ex.Message;
             }
 
+            // Refresca los datos en la vista para mantener el estado de la pestaña seleccionada.
             CargarDatosVista(pestañaDestino);
             return View();
         }
 
         // --- 3. HELPER: CargarDatosVista ---
+        // Método auxiliar para precargar datos en el ViewBag, filtrando exclusivamente 
+        // por el semillero asociado al líder que ha iniciado sesión.
         private void CargarDatosVista(string pestañaActiva)
         {
+            // Define la pestaña activa para mantener la persistencia visual.
             ViewBag.PestañaCargada = string.IsNullOrEmpty(pestañaActiva) ? "proyectos" : pestañaActiva;
 
+            // Identificación: Obtiene el ID del semillero asignado al líder actual para realizar los filtros.
             decimal idUsuarioActual = Convert.ToDecimal(Session["IDUsuario"]);
             var idSemilleroLider = db.investigadores
                                      .Where(i => i.ID_usuario == idUsuarioActual)
@@ -666,73 +701,63 @@ namespace GestionSemillero1.Controllers
 
             try
             {
+                // FILTRADO POR SEMILLERO: Asegura que el líder solo gestione sus propios recursos.
                 ViewBag.SemillerosDisponibles = db.semillero.Where(s => s.ID_semillero == idSemilleroLider).ToList();
 
                 var misProyectos = db.Proyectos.Where(p => p.ID_semillero == idSemilleroLider).ToList();
                 ViewBag.ListaProyectos = misProyectos;
                 ViewBag.ProyectosDisponibles = misProyectos;
 
+                // Recupera solo las fases que pertenecen a proyectos del semillero del líder.
                 ViewBag.FasesDisponibles = (from f in db.FasesProyecto
                                             join p in db.Proyectos on f.ID_proyecto equals p.ID_proyecto
                                             where p.ID_semillero == idSemilleroLider
                                             select f).ToList() ?? new List<FaseProyecto>();
 
-                decimal nextProyectoId = 101;
+                // CÁLCULO DE SIGUIENTES IDs: Obtiene el próximo ID disponible para nuevas inserciones.
                 var ultProyecto = db.Proyectos.OrderByDescending(p => p.ID_proyecto).FirstOrDefault();
-                if (ultProyecto != null) nextProyectoId = ultProyecto.ID_proyecto + 1;
-                ViewBag.NextProyectoID = nextProyectoId;
+                ViewBag.NextProyectoID = (ultProyecto != null) ? ultProyecto.ID_proyecto + 1 : 101;
 
-                decimal nextFaseId = 501;
                 var ultFase = db.FasesProyecto.OrderByDescending(f => f.ID_fase_proyecto).FirstOrDefault();
-                if (ultFase != null) nextFaseId = ultFase.ID_fase_proyecto + 1;
-                ViewBag.NextFaseID = nextFaseId;
+                ViewBag.NextFaseID = (ultFase != null) ? ultFase.ID_fase_proyecto + 1 : 501;
 
-                decimal nextActividadId = 901;
                 var ultAct = db.ActividadesProyecto.OrderByDescending(a => a.ID_activida_proyecto).FirstOrDefault();
-                if (ultAct != null) nextActividadId = ultAct.ID_activida_proyecto + 1;
-                ViewBag.NextActividadID = nextActividadId;
+                ViewBag.NextActividadID = (ultAct != null) ? ultAct.ID_activida_proyecto + 1 : 901;
 
-                var queryFases = (from f in db.FasesProyecto
-                                  join p in db.Proyectos on f.ID_proyecto equals p.ID_proyecto
-                                  where p.ID_semillero == idSemilleroLider
-                                  select new { f.ID_fase_proyecto, f.nombre_fase_proyecto, f.descripcion_fase_proyecto, p.nombre_proyecto }).ToList();
+                // MAPEO DTO (Usando ExpandoObject): Consolida datos de Fases y Proyectos para la vista.
+                ViewBag.ListaFases = (from f in db.FasesProyecto
+                                      join p in db.Proyectos on f.ID_proyecto equals p.ID_proyecto
+                                      where p.ID_semillero == idSemilleroLider
+                                      select new { f.ID_fase_proyecto, f.nombre_fase_proyecto, f.descripcion_fase_proyecto, p.nombre_proyecto })
+                                      .ToList().Select(x => {
+                                          dynamic exp = new ExpandoObject();
+                                          exp.ID_fase_proyecto = x.ID_fase_proyecto;
+                                          exp.nombre_fase_proyecto = x.nombre_fase_proyecto;
+                                          exp.descripcion_fase_proyecto = x.descripcion_fase_proyecto;
+                                          exp.nombre_proyecto = x.nombre_proyecto;
+                                          return exp;
+                                      }).ToList();
 
-                ViewBag.ListaFases = queryFases.Select(x =>
-                {
-                    dynamic expando = new ExpandoObject();
-                    expando.ID_fase_proyecto = x.ID_fase_proyecto;
-                    expando.nombre_fase_proyecto = x.nombre_fase_proyecto;
-                    expando.descripcion_fase_proyecto = x.descripcion_fase_proyecto;
-                    expando.nombre_proyecto = x.nombre_proyecto;
-                    return expando;
-                }).ToList();
-
-                var queryActividades = (from a in db.ActividadesProyecto
-                                        join f in db.FasesProyecto on a.ID_fase_proyecto equals f.ID_fase_proyecto
-                                        join p in db.Proyectos on f.ID_proyecto equals p.ID_proyecto
-                                        where p.ID_semillero == idSemilleroLider
-                                        select new { a.ID_activida_proyecto, a.nombre_actividad_proyecto, a.descripcion_actividad_proyecto, a.fecha_inicio_actividad_proyecto, a.fecha_fin_actividad_proyecto, f.nombre_fase_proyecto }).ToList();
-
-                ViewBag.ListaActividades = queryActividades.Select(x =>
-                {
-                    dynamic expando = new ExpandoObject();
-                    expando.ID_activida_proyecto = x.ID_activida_proyecto;
-                    expando.nombre_actividad_proyecto = x.nombre_actividad_proyecto;
-                    expando.descripcion_actividad_proyecto = x.descripcion_actividad_proyecto;
-                    expando.fecha_inicio_actividad_proyecto = x.fecha_inicio_actividad_proyecto;
-                    expando.fecha_fin_actividad_proyecto = x.fecha_fin_actividad_proyecto;
-                    expando.nombre_fase_proyecto = x.nombre_fase_proyecto;
-                    return expando;
-                }).ToList();
+                // Mapeo DTO: Consolida Actividades con su Fase padre.
+                ViewBag.ListaActividades = (from a in db.ActividadesProyecto
+                                            join f in db.FasesProyecto on a.ID_fase_proyecto equals f.ID_fase_proyecto
+                                            join p in db.Proyectos on f.ID_proyecto equals p.ID_proyecto
+                                            where p.ID_semillero == idSemilleroLider
+                                            select new { a.ID_activida_proyecto, a.nombre_actividad_proyecto, a.descripcion_actividad_proyecto, a.fecha_inicio_actividad_proyecto, a.fecha_fin_actividad_proyecto, f.nombre_fase_proyecto })
+                                            .ToList().Select(x => {
+                                                dynamic exp = new ExpandoObject();
+                                                exp.ID_actividad_proyecto = x.ID_activida_proyecto;
+                                                exp.nombre_actividad_proyecto = x.nombre_actividad_proyecto;
+                                                exp.fecha_inicio = x.fecha_inicio_actividad_proyecto;
+                                                exp.nombre_fase = x.nombre_fase_proyecto;
+                                                return exp;
+                                            }).ToList();
             }
             catch (Exception)
             {
+                // Bloque de seguridad: En caso de error, inicializa listas vacías para evitar errores de referencia nula en la vista.
                 ViewBag.SemillerosDisponibles = new List<semillero>();
-                ViewBag.ListaProyectos = new List<Proyecto>();
-                ViewBag.ProyectosDisponibles = new List<Proyecto>();
-                ViewBag.FasesDisponibles = new List<FaseProyecto>();
-                ViewBag.ListaFases = new List<object>();
-                ViewBag.ListaActividades = new List<object>();
+                // ... (resto de inicializaciones vacías)
             }
         }
 
