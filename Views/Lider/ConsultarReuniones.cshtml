@@ -43,7 +43,7 @@
             </select>
         </div>
         <div class="col-md-5">
-            <input type="text" name="valor" id="criterioBusqueda" class="form-control" placeholder="Valor a buscar..." value="@Request["valor"]" list="filtroSuggestions" autocomplete="off" />
+            <input type="text" name="valor" id="criterioBusqueda" class="form-control" placeholder="Valor a buscar..." value="@Request["valor"]" list="filtroSuggestions" autocomplete="off" maxlength="10" />
             <datalist id="filtroSuggestions"></datalist>
 
             @if (ViewBag.Error != null)
@@ -57,7 +57,7 @@
         </div>
 
         <div class="col-md-2">
-            <a href="@Url.Action("ConsultarReuniones", "Lider")" class="btn btn-secondary w-100">Limpiar</a>
+            <a href="@Url.Action("ConsultarReuniones", "Lider")" class="btn btn-secondary w-100 text-decoration-none">Limpiar</a>
         </div>
 
         <div id="validationMessage" class="alert alert-danger py-2 px-3 mt-2 mb-0 col-12 d-none" style="font-size: 14px;">
@@ -107,10 +107,10 @@
                             hFinVisual = dtFin.ToString("HH:mm tt", System.Globalization.CultureInfo.InvariantCulture);
                         }
 
-                        // Validación dinámica de estados basada en fechas
                         string estado = item.estado_reunion;
+                        bool esPasada = item.fecha_reunion.Date < DateTime.Today;
 
-                        if (item.fecha_reunion.Date < DateTime.Today)
+                        if (esPasada)
                         {
                             estado = "Finalizada";
                         }
@@ -126,16 +126,42 @@
                             }
                         }
 
-                        <tr>
-                            <td><strong>@item.ID_reunion</strong></td>
-                            <td>@item.fecha_reunion.ToString("dd/MM/yyyy")</td>
+                        string nombresParticipantesHtml = "<span class='text-muted fw-normal'>Sin participantes asignados</span>";
+
+                        if (item.AsistenciaReunion != null && item.AsistenciaReunion.Any())
+                        {
+                            var investigadoresSemillero = ViewBag.ListaInvestigadores as List<GestionSemillero1.Models.investigadores> ?? new List<GestionSemillero1.Models.investigadores>();
+                            var listaNombres = new List<string>();
+
+                            foreach (var asis in item.AsistenciaReunion)
+                            {
+                                var persona = investigadoresSemillero.FirstOrDefault(m => m.ID_usuario == asis.ID_usuario);
+                                if (persona != null)
+                                {
+                                    listaNombres.Add("• " + persona.nombre_investigador + " " + persona.apellido_investigador);
+                                }
+                            }
+
+                            if (listaNombres.Any())
+                            {
+                                nombresParticipantesHtml = string.Join("<br/>", listaNombres);
+                            }
+                        }
+
+                        string rowBg = esPasada ? "background-color: #f8f9fa;" : "";
+                        string textClass = esPasada ? "text-muted" : "text-dark";
+                        string lugarClass = esPasada ? "text-muted text-decoration-line-through" : "text-dark";
+
+                        <tr style="@rowBg">
+                            <td class="@textClass"><strong>@item.ID_reunion</strong></td>
+                            <td class="@textClass">@item.fecha_reunion.ToString("dd/MM/yyyy")</td>
                             <td>
-                                <span class="badge bg-light text-dark border" style="padding: 5px 8px;">
+                                <span class="badge bg-light border @lugarClass" style="padding: 5px 8px;">
                                     📍 @item.lugar_reunion
                                 </span>
                             </td>
-                            <td>@hIniVisual</td>
-                            <td>@hFinVisual</td>
+                            <td class="@textClass">@hIniVisual</td>
+                            <td class="@textClass">@hFinVisual</td>
 
                             <td>
                                 <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
@@ -145,8 +171,9 @@
                                         data-lugar="@item.lugar_reunion"
                                         data-horario="@hIniVisual - @hFinVisual"
                                         data-estado="@estado"
-                                        data-asunto="@item.descripcion_reunion">
-                                    <i class="bi bi-exclamation-circle-fill fs-5" title="Ver hoja de detalles de la reunión"></i>
+                                        data-asunto="@item.descripcion_reunion"
+                                        data-nombres="@nombresParticipantesHtml">
+                                    <i class="bi bi-info-circle-fill fs-5" title="Ver hoja de detalles de la reunión"></i>
                                 </button>
                             </td>
                         </tr>
@@ -157,7 +184,7 @@
                     <tr>
                         <td colspan="6" class="text-center text-muted" style="padding: 25px; font-style: italic; background-color: #f9f9f9;">
                             <i class="bi bi-calendar-x" style="margin-right: 8px; font-size: 1.2rem; vertical-align: middle;"></i>
-                            No tienes reuniones personalizadas creadas o asignadas en este momento.
+                            No se encontraron reuniones con los criterios especificados.
                         </td>
                     </tr>
                 }
@@ -202,14 +229,22 @@
                     </div>
                     <div class="col-12 mt-2">
                         <p class="mb-1 small"><i class="bi bi-chat-right-text-fill text-secondary me-2"></i><strong>Asunto Completo / Descripción de Agenda:</strong></p>
-                        <div class="p-3 bg-light rounded text-secondary small text-start" id="detAsunto" style="white-space: pre-wrap; max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6;">
+                        <div class="p-3 bg-light rounded text-secondary small text-start" id="detAsunto" style="white-space: pre-wrap; max-height: 100px; overflow-y: auto; border: 1px solid #dee2e6;">
                             Sin descripción detallada.
                         </div>
                     </div>
+
+                    <div class="col-12 mt-3">
+                        <p class="mb-1 small"><i class="bi bi-people-fill text-secondary me-2"></i><strong>Participantes Convocados:</strong></p>
+                        <div class="p-3 bg-light rounded text-dark fw-bold small text-start" id="detParticipantes" style="max-height: 120px; overflow-y: auto; border: 1px solid #dee2e6;">
+                            Ninguno
+                        </div>
+                    </div>
+
                 </div>
             </div>
             <div class="modal-footer border-0 p-3 bg-light" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;">
-                <button type="button" class="btn btn-secondary btn-sm px-4" onclick="cerrarModalManual()">Cerrar Ventana</button>
+                <button type="button" class="btn btn-secondary btn-sm px-4 text-decoration-none" onclick="cerrarModalManual()">Cerrar Ventana</button>
             </div>
         </div>
     </div>
@@ -229,15 +264,23 @@
             $datalist.empty();
 
             var opciones = [];
+
+            // Lógica para limitar los caracteres dinámicamente
             if (seleccion === "ID") {
                 opciones = topIDs;
                 $input.attr("placeholder", "Ej: 5001");
+                $input.attr("maxlength", "5"); // Límite de 5 para ID
             } else if (seleccion === "Fecha") {
                 opciones = topFechas;
                 $input.attr("placeholder", "Ej: 14/06/2026");
+                $input.attr("maxlength", "10"); // Límite de 10 para Fecha
             } else {
                 $input.attr("placeholder", "Valor a buscar...");
+                $input.attr("maxlength", "10"); // Límite por defecto
             }
+
+            // Opcional: limpiar el input si el usuario cambia el filtro para evitar inconsistencias
+            $input.val('');
 
             opciones.forEach(function (item) {
                 $datalist.append($('<option>').val(item));
@@ -246,6 +289,21 @@
 
         $("#tipoFiltro").change(cambiarSugerencias);
         cambiarSugerencias();
+
+        // Evitar que ingresen letras si está seleccionado "ID" o "Fecha"
+        $("#criterioBusqueda").on("keypress", function (e) {
+            var seleccion = $("#tipoFiltro").val();
+            var charCode = e.which ? e.which : e.keyCode;
+
+            // Si es ID, solo permitir números (0-9)
+            if (seleccion === "ID" && (charCode < 48 || charCode > 57)) {
+                e.preventDefault();
+            }
+            // Si es Fecha, permitir números y barras inclinadas o guiones (0-9, /, -)
+            else if (seleccion === "Fecha" && (charCode < 45 || charCode > 57 || charCode === 46)) {
+                e.preventDefault();
+            }
+        });
 
         $("#filterForm").submit(function (e) {
             var tipoFiltro = $("#tipoFiltro").val();
@@ -292,7 +350,10 @@
         document.getElementById("detEstado").innerText = data.estado;
         document.getElementById("detAsunto").innerText = data.asunto;
 
-        // 🌟 ACTUALIZACIÓN DINÁMICA DE COLORES DEL BADGE EN LA VENTANA MODAL FLOTANTE
+        // Inyección de la lista de nombres al modal
+        document.getElementById("detParticipantes").innerHTML = data.nombres;
+
+        // Actualización dinámica de colores del badge
         const badge = document.getElementById("detEstado");
         if (data.estado.toLowerCase() === "finalizada") {
             badge.className = "badge bg-danger text-white px-2 py-1 small fw-semibold";
@@ -300,7 +361,7 @@
             badge.className = "badge bg-info text-white px-2 py-1 small fw-semibold";
         } else {
             badge.className = "badge text-white px-2 py-1 small fw-semibold";
-            badge.style.backgroundColor = "#278a5f"; // Color verde institucional para Programada
+            badge.style.backgroundColor = "#278a5f";
         }
 
         const modal = document.getElementById("modalDetallesReunion");

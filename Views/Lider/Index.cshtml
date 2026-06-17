@@ -48,7 +48,7 @@
             <div class="col-md-4 mb-4">
                 <div class="dashboard-card">
                     <h5>2. Lugar / Enlace:</h5>
-                    <input type="text" name="lugar_reunion" id="lugar_reunion" class="form-control" list="lugaresSugeridos" placeholder="Seleccione o escriba el lugar" required autocomplete="off" />
+                    <input type="text" name="lugar_reunion" id="lugar_reunion" class="form-control" list="lugaresSugeridos" placeholder="Seleccione o escriba el lugar" required autocomplete="off" maxlength="20" />
 
                     <datalist id="lugaresSugeridos">
                         <option value="Salon30"></option>
@@ -94,7 +94,7 @@
             <div class="col-md-4 mb-4">
                 <div class="dashboard-card">
                     <h5>6. Asunto / Descripción:</h5>
-                    <textarea name="descripcion_reunion" id="descripcion_reunion" class="form-control" rows="4" placeholder="Detalles de la agenda..." required></textarea>
+                    <textarea name="descripcion_reunion" id="descripcion_reunion" class="form-control" rows="4" placeholder="Detalles de la agenda..." required maxlength="100"></textarea>
                 </div>
             </div>
         </div>
@@ -159,30 +159,36 @@
                             hFinVisual = dtFin.ToString("HH:mm tt", System.Globalization.CultureInfo.InvariantCulture);
                         }
 
-                        string estado = r.estado_reunion ?? "";
-                        if (r.fecha_reunion.Date < DateTime.Today)
-                        {
-                            estado = "Finalizada";
-                        }
-                        else if (r.fecha_reunion.Date > DateTime.Today)
-                        {
-                            estado = "Programada";
-                        }
-                        else
-                        {
-                            if (string.IsNullOrEmpty(estado) || estado.Equals("Finalizada", StringComparison.OrdinalIgnoreCase))
-                            {
-                                estado = "En curso";
-                            }
-                        }
+                        // Lógica de Bloqueo de Reuniones Antiguas
+                        bool esPasada = r.fecha_reunion.Date < DateTime.Today;
 
+                        // Extracción de Participantes Reales
                         string idsParticipantes = "";
+                        string nombresParticipantes = "Sin participantes asignados";
+                        var listaNombres = new List<string>();
+
                         if (r.AsistenciaReunion != null && r.AsistenciaReunion.Any())
                         {
                             idsParticipantes = string.Join(",", r.AsistenciaReunion.Select(a => a.ID_usuario));
+                            foreach (var asis in r.AsistenciaReunion)
+                            {
+                                var inv = Model.FirstOrDefault(m => m.ID_usuario == asis.ID_usuario);
+                                if (inv != null)
+                                {
+                                    listaNombres.Add("• " + inv.nombre_investigador + " " + inv.apellido_investigador);
+                                }
+                            }
+                            if (listaNombres.Any()) { nombresParticipantes = string.Join("\n", listaNombres); }
                         }
 
-                        <tr onclick="cargarReunionFormulario(this)"
+                        string estado = esPasada ? "Finalizada" : (r.fecha_reunion.Date == DateTime.Today ? "Programada" : "Programada");
+
+                        // Configuración dinámica de atributos según si pasó la fecha o no
+                        string onClickAttr = esPasada ? "" : "onclick='cargarReunionFormulario(this)'";
+                        string cursorStyle = esPasada ? "cursor: default; background-color: #f8f9fa;" : "cursor: pointer;";
+                        string tooltip = esPasada ? "Reunión finalizada (Solo lectura)" : "Haga clic para editar en el formulario";
+
+                        <tr @Html.Raw(onClickAttr)
                             data-id="@r.ID_reunion"
                             data-fecha="@fIso"
                             data-lugar="@r.lugar_reunion"
@@ -190,16 +196,16 @@
                             data-horafin="@hFin24"
                             data-descripcion="@r.descripcion_reunion"
                             data-participantes="@idsParticipantes"
-                            style="cursor: pointer;"
-                            title="Haga clic para editar en el formulario superior">
+                            style="@cursorStyle"
+                            title="@tooltip">
 
-                            <td><strong>@r.ID_reunion</strong></td>
-                            <td class="fw-semibold">@r.fecha_reunion.ToString("dd/MM/yyyy")</td>
+                            <td class="@(esPasada ? "text-muted" : "")"><strong>@r.ID_reunion</strong></td>
+                            <td class="fw-semibold @(esPasada ? "text-muted" : "")">@r.fecha_reunion.ToString("dd/MM/yyyy")</td>
 
-                            <td class="text-dark fw-semibold">@r.lugar_reunion</td>
+                            <td class="fw-semibold @(esPasada ? "text-muted text-decoration-line-through" : "text-dark")">@r.lugar_reunion</td>
 
-                            <td>@hIniVisual</td>
-                            <td>@hFinVisual</td>
+                            <td class="@(esPasada ? "text-muted" : "")">@hIniVisual</td>
+                            <td class="@(esPasada ? "text-muted" : "")">@hFinVisual</td>
 
                             <td>
                                 <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
@@ -209,8 +215,9 @@
                                         data-lugar="@r.lugar_reunion"
                                         data-horario="@hIniVisual - @hFinVisual"
                                         data-estado="@estado"
-                                        data-asunto="@r.descripcion_reunion">
-                                    <i class="bi bi-exclamation-circle-fill fs-5" title="Ver hoja de detalles de la reunión"></i>
+                                        data-asunto="@r.descripcion_reunion"
+                                        data-nombresparticipantes="@nombresParticipantes">
+                                    <i class="bi bi-info-circle-fill fs-5" title="Ver hoja de detalles de la reunión"></i>
                                 </button>
                             </td>
                         </tr>
@@ -228,7 +235,7 @@
                 <h5 class="modal-title fw-bold" id="modalDetallesReunionLabel">
                     <i class="bi bi-calendar2-week me-2"></i>Ficha de Control del Comité
                 </h5>
-                <button type="button" class="border-0 bg-transparent fs-4 text-white" onclick="cerrarModalManual()" style="outline: none;">
+                <button type="button" class="border-0 bg-transparent fs-4 text-white text-decoration-none" onclick="cerrarModalManual()" style="outline: none;">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -255,12 +262,21 @@
                         <p class="mb-1 small"><i class="bi bi-geo-alt-fill text-secondary me-2"></i><strong>Lugar Asignado / Link:</strong></p>
                         <span id="detLugar" class="text-dark fw-semibold">Ninguno</span>
                     </div>
+
                     <div class="col-12 mt-2">
-                        <p class="mb-1 small"><i class="bi bi-chat-right-text-fill text-secondary me-2"></i><strong>Asunto Completo / Descripción de Agenda:</strong></p>
-                        <div class="p-3 bg-light rounded text-secondary small text-start" id="detAsunto" style="white-space: pre-wrap; max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6;">
+                        <p class="mb-1 small"><i class="bi bi-chat-right-text-fill text-secondary me-2"></i><strong>Asunto / Descripción de Agenda:</strong></p>
+                        <div class="p-3 bg-light rounded text-secondary small text-start" id="detAsunto" style="white-space: pre-wrap; max-height: 100px; overflow-y: auto; border: 1px solid #dee2e6;">
                             Sin descripción detallada.
                         </div>
                     </div>
+
+                    <div class="col-12 mt-3">
+                        <p class="mb-1 small"><i class="bi bi-people-fill text-secondary me-2"></i><strong>Participantes Asignados:</strong></p>
+                        <div class="p-3 rounded small text-start text-dark" id="detParticipantes" style="white-space: pre-wrap; max-height: 100px; overflow-y: auto; background-color: #e9f2ee; border: 1px solid #c2dbcf;">
+                            Sin participantes asignados.
+                        </div>
+                    </div>
+
                 </div>
             </div>
             <div class="modal-footer border-0 p-3 bg-light" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;">
@@ -275,7 +291,6 @@
         const inputFecha = document.getElementById("fecha_reunion");
         const hoy = new Date().toISOString().split('T')[0];
         inputFecha.setAttribute("min", hoy);
-
         const form = document.getElementById("formReunion");
         form.addEventListener("submit", function (e) {
             if (form.action.includes("EliminarReunion")) return true;
@@ -307,10 +322,9 @@
         document.getElementById("hora_fin_reunion").value = data.horafin;
         document.getElementById("descripcion_reunion").value = data.descripcion;
 
-        // Cambiando estilos dinámicos del botón submit al seleccionar
         const btnSubmit = document.getElementById("btnSubmit");
         btnSubmit.innerHTML = "<i class='bi bi-arrow-clockwise me-2'></i>Modificar Reunión";
-        btnSubmit.style.backgroundColor = "#c98d26"; // Color Mostaza/Dorado
+        btnSubmit.style.backgroundColor = "#c98d26";
 
         document.getElementById("btnCancelar").classList.remove("d-none");
         document.getElementById("btnEliminar").classList.remove("d-none");
@@ -334,7 +348,6 @@
         document.getElementById("formReunion").reset();
         document.getElementById("ID_reunion").value = "";
 
-        // Regresando el botón a su estado y color original
         const btnSubmit = document.getElementById("btnSubmit");
         btnSubmit.innerHTML = "<i class='bi bi-plus-circle me-2'></i>Registrar Reunión";
         btnSubmit.style.backgroundColor = "#278a5f";
@@ -345,7 +358,7 @@
     }
 
     function redirigirAEliminar(event) {
-        if (confirm(" ¿Está completamente seguro de que desea eliminar de forma permanente esta reunión del calendario del semillero?")) {
+        if (confirm("¿Está completamente seguro de que desea eliminar de forma permanente esta reunión del calendario del semillero?")) {
             const form = document.getElementById("formReunion");
             form.action = "@Url.Action("EliminarReunion", "Lider")";
         } else {
@@ -354,7 +367,7 @@
     }
 
     function verFichaTecnicaReunion(e, btn) {
-        e.stopPropagation();
+        e.stopPropagation(); // Evita que se dispare el evento clic de la fila completa
 
         const data = btn.dataset;
 
@@ -365,6 +378,9 @@
         document.getElementById("detEstado").innerText = data.estado;
         document.getElementById("detAsunto").innerText = data.asunto;
 
+        // Carga de Participantes
+        document.getElementById("detParticipantes").innerText = data.nombresparticipantes;
+
         const badge = document.getElementById("detEstado");
         if (data.estado.toLowerCase() === "finalizada") {
             badge.className = "badge bg-danger text-white px-2 py-1 small fw-semibold";
@@ -372,7 +388,7 @@
             badge.className = "badge bg-info text-white px-2 py-1 small fw-semibold";
         } else {
             badge.className = "badge text-white px-2 py-1 small fw-semibold";
-            badge.style.backgroundColor = "#278a5f"; // Color verde institucional para Programada
+            badge.style.backgroundColor = "#278a5f";
         }
 
         const modal = document.getElementById("modalDetallesReunion");

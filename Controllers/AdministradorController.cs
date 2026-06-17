@@ -1,11 +1,12 @@
-﻿using GestionSemillero1.Models;
+﻿using CrystalDecisions.CrystalReports.Engine;
+using CrystalDecisions.Shared;
+using GestionSemillero1.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Web;
 using System.Web.Mvc;
-using CrystalDecisions.CrystalReports.Engine;
-using CrystalDecisions.Shared;
 
 
 namespace GestionSemillero1.Controllers
@@ -19,12 +20,29 @@ namespace GestionSemillero1.Controllers
         // ==========================================================
         public ActionResult Index(decimal? filtroSemillero, string filtroLinea, string filtroFecha)
         {
+            // 🌟 SOLUCIÓN: Limpieza de caché obligatoria para que el Admin SIEMPRE vea los cambios
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
             if (Session["UsuarioLogueado"] == null)
                 return RedirectToAction("Login", "Account");
 
             ViewBag.ListaSemilleros = db.Database.SqlQuery<semillero>("SELECT * FROM semillero WHERE estado = 'activo'").ToList();
             ViewBag.ListaLineas = db.Database.SqlQuery<string>("SELECT DISTINCT linea_investigacion FROM semillero WHERE linea_investigacion IS NOT NULL").ToList();
-            ViewBag.ComboLideres = db.Database.SqlQuery<Usuario>("SELECT * FROM Usuario WHERE tipo_usuario = 'Lider' AND estado_usuario = 'Activo'").ToList();
+
+            // 🌟 MEJORA: Traemos a los líderes con su nombre real haciendo JOIN con investigadores
+            ViewBag.ComboLideres = db.Database.SqlQuery<LiderDropdownDTO>(
+                @"SELECT u.ID_usuario, i.nombre_investigador + ' ' + i.apellido_investigador AS NombreCompleto
+                  FROM usuario u
+                  INNER JOIN investigadores i ON u.ID_usuario = i.ID_usuario
+                  WHERE u.tipo_usuario IN ('Lider', 'Líder') AND u.estado_usuario = 'activo'").ToList();
+
+            // 🌟 NUEVO: Mapeo de qué líder pertenece a qué semillero actualmente
+            ViewBag.LideresActuales = db.Database.SqlQuery<LiderSemilleroDTO>(
+                @"SELECT i.ID_semillero, u.ID_usuario
+                  FROM investigadores i
+                  INNER JOIN usuario u ON i.ID_usuario = u.ID_usuario
+                  WHERE u.tipo_usuario IN ('Lider', 'Líder')").ToList();
 
             var queryTarjetas = "SELECT * FROM semillero WHERE estado = 'activo'";
             List<semillero> resultadosTarjetas = db.Database.SqlQuery<semillero>(queryTarjetas).ToList();
@@ -52,7 +70,8 @@ namespace GestionSemillero1.Controllers
         }
 
         [HttpPost]
-        public ActionResult GuardarSemillero(semillero model)
+        // 🌟 MEJORA: Se añade el parámetro idLiderSeleccionado para capturar el menú desplegable
+        public ActionResult GuardarSemillero(semillero model, decimal? idLiderSeleccionado)
         {
             try
             {
@@ -60,10 +79,22 @@ namespace GestionSemillero1.Controllers
                 {
                     decimal nuevoId = db.Database.SqlQuery<decimal>("SELECT COALESCE(MAX(ID_semillero), 0) + 1 FROM semillero").FirstOrDefault();
                     db.Database.ExecuteSqlCommand("INSERT INTO semillero (ID_semillero, nombre_semillero, linea_investigacion, descripcion_semillero, fecha_creacion_semillero, estado) VALUES (@p0, @p1, @p2, @p3, @p4, 'activo')", nuevoId, model.nombre_semillero, model.linea_investigacion, model.descripcion_semillero, DateTime.Now);
+
+                    // Asignar líder al nuevo semillero
+                    if (idLiderSeleccionado.HasValue && idLiderSeleccionado.Value > 0)
+                    {
+                        db.Database.ExecuteSqlCommand("UPDATE investigadores SET ID_semillero = @p0 WHERE ID_usuario = @p1", nuevoId, idLiderSeleccionado.Value);
+                    }
                 }
                 else
                 {
                     db.Database.ExecuteSqlCommand("UPDATE semillero SET nombre_semillero = @p0, linea_investigacion = @p1, descripcion_semillero = @p2 WHERE ID_semillero = @p3", model.nombre_semillero, model.linea_investigacion, model.descripcion_semillero, model.ID_semillero);
+
+                    // Mover al líder seleccionado a este semillero editado
+                    if (idLiderSeleccionado.HasValue && idLiderSeleccionado.Value > 0)
+                    {
+                        db.Database.ExecuteSqlCommand("UPDATE investigadores SET ID_semillero = @p0 WHERE ID_usuario = @p1", model.ID_semillero, idLiderSeleccionado.Value);
+                    }
                 }
                 return RedirectToAction("Index");
             }
@@ -75,6 +106,10 @@ namespace GestionSemillero1.Controllers
         // ==========================================================
         public ActionResult Usuarios(string criterio, string valor)
         {
+            // 🌟 SOLUCIÓN: Limpieza de caché
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
             if (Session["UsuarioLogueado"] == null)
                 return RedirectToAction("Login", "Account");
 
@@ -174,6 +209,10 @@ namespace GestionSemillero1.Controllers
         // ==========================================================
         public ActionResult Reuniones(decimal? filtroSemillero, string filtroEstado)
         {
+            // 🌟 SOLUCIÓN: Limpieza de caché
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
             if (Session["UsuarioLogueado"] == null)
                 return RedirectToAction("Login", "Account");
 
@@ -381,6 +420,10 @@ namespace GestionSemillero1.Controllers
         [HttpGet]
         public ActionResult RegistrarProyecto(string pestañaActiva = "proyectos")
         {
+            // 🌟 SOLUCIÓN: Limpieza de caché
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
             if (Session["UsuarioLogueado"] == null) return RedirectToAction("Login", "Account");
             CargarDatosVista(pestañaActiva);
             return View();
@@ -399,7 +442,7 @@ namespace GestionSemillero1.Controllers
                     if (accionCrud == "agregar")
                     {
                         db.Proyectos.Add(p);
-                        db.SaveChanges(); // Persistencia intermedia obligatoria antes de atar llaves foráneas
+                        db.SaveChanges();
 
                         var nombresFases = new List<string> { "Análisis y Arquitectura", "Desarrollo de Vistas", "Casos de Prueba", "Configuración Docker", "Recolección de Datos" };
                         var descripcionesFases = new List<string> { "Definición del modelo relacional MER y endpoints", "Creación de componentes y estilos de la interfaz UI", "Diseño y ejecución de pruebas funcionales y de estrés", "Creación de contenedores y orquestación del entorno", "Limpieza y estructuración de datos para el semillero" };
@@ -485,6 +528,10 @@ namespace GestionSemillero1.Controllers
         // ==========================================================
         public ActionResult RegistrarEvento(string criterio, string valor, string fechaFiltro)
         {
+            // 🌟 SOLUCIÓN: Limpieza de caché
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
             if (Session["UsuarioLogueado"] == null)
                 return RedirectToAction("Login", "Account");
 
@@ -569,112 +616,143 @@ namespace GestionSemillero1.Controllers
             return RedirectToAction("RegistrarEvento");
         }
 
-
         //SECCION DE REPORTES 
         // 1. GET: Administrador/Reportes
         public ActionResult Reportes()
         {
-            using (var db = new DbSemillero()) // REEMPLAZA por tu DbContext real
+            // 🌟 SOLUCIÓN: Limpieza de caché
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
+            using (var db = new DbSemillero())
             {
-                // Métricas rápidas para las tarjetas informativas de la vista
                 ViewBag.TotalSemilleros = db.semillero.Count();
-                ViewBag.TotalUsuarios = db.Usuarios.Count(); // Ajusta según tu tabla de usuarios
+                ViewBag.TotalUsuarios = db.Usuarios.Count();
             }
             return View();
         }
 
-
         [HttpPost]
         public ActionResult GenerarCrystalReport(string nombreReporte)
         {
+            ReportDocument reportDocument = new ReportDocument();
             try
             {
-                ReportDocument reportDocument = new ReportDocument();
                 string rutaReporte = Path.Combine(Server.MapPath("~/Reports"), nombreReporte + ".rpt");
 
                 if (!System.IO.File.Exists(rutaReporte))
                 {
-                    TempData["Error"] = "El archivo físico " + nombreReporte + ".rpt no se encuentra.";
-                    return RedirectToAction("Reportes");
+                    return Content("Error: El archivo físico " + nombreReporte + ".rpt no existe.");
                 }
 
                 reportDocument.Load(rutaReporte);
 
-                using (var db = new DbSemillero())
-                {
-                    // LINEAS CRUCIALES: Apagamos la creación de proxies dinámicos
-                    db.Configuration.ProxyCreationEnabled = false;
-                    db.Configuration.LazyLoadingEnabled = false;
+                // 🔥 EXTRAEMOS LA CONEXIÓN DIRECTAMENTE DEL CONTEXTO (BURLANDO A ENTITY FRAMEWORK)
+                string stringConexion = new DbSemillero().Database.Connection.ConnectionString;
 
+                using (System.Data.SqlClient.SqlConnection conn = new System.Data.SqlClient.SqlConnection(stringConexion))
+                {
+                    string querySQL = "";
+
+                    // Definimos la consulta plana dependiendo del reporte
                     switch (nombreReporte)
                     {
+                        // --- ADMIN ---
                         case "Reporte_Investigadores_General":
-                            // Cargamos la lista pura de investigadores
-                            var investigadoresData = db.investigadores.ToList();
-
-                            if (investigadoresData == null || investigadoresData.Count == 0)
-                            {
-                                TempData["Error"] = "No hay investigadores en la base de datos.";
-                                return RedirectToAction("Reportes");
-                            }
-
-                            reportDocument.SetDataSource(investigadoresData);
+                            querySQL = "SELECT * FROM investigadores";
                             break;
-
                         case "Reporte_Lideres_General":
-                            // 1. Buscamos los IDs de los usuarios que tengan el rol de Líder usando tu columna 'tipo_usuario'
-                            var idsUsuariosLideres = db.Usuarios
-                                                       .Where(u => u.tipo_usuario == "Lider" || u.tipo_usuario == "Líder")
-                                                       .Select(u => u.ID_usuario)
-                                                       .ToList();
-
-                            // 2. Filtramos la tabla investigadores para que solo traiga a los que pertenezcan a esos usuarios líderes
-                            var lideresData = db.investigadores
-                                                .Where(i => idsUsuariosLideres.Contains(i.ID_usuario))
-                                                .ToList();
-
-                            // 3. Respaldo por si la base de datos local de pruebas no tiene registros con ese rol exacto todavía
-                            if (!lideresData.Any())
-                            {
-                                lideresData = db.investigadores.Take(3).ToList();
-                            }
-
-                            reportDocument.SetDataSource(lideresData);
+                            // Filtramos usando SQL puro
+                            querySQL = @"SELECT i.* FROM investigadores i 
+                                 INNER JOIN Usuario u ON i.ID_usuario = u.ID_usuario 
+                                 WHERE u.tipo_usuario IN ('Lider', 'Administrador', 'Líder')";
                             break;
-
                         case "Reporte_Semilleros_Lineas":
-                            var semillerosData = db.semillero.ToList();
-                            reportDocument.SetDataSource(semillerosData);
+                            querySQL = "SELECT * FROM semillero";
                             break;
-
                         case "Reporte_Proyectos_Eventos":
-                            var proyectosData = db.Proyectos.ToList();
-                            reportDocument.SetDataSource(proyectosData);
+                            querySQL = "SELECT * FROM proyecto";
+                            break;
+                        case "Reporte_Eventos_General":
+                            querySQL = "SELECT * FROM evento";
                             break;
 
-                        case "Reporte_Reuniones_Por_Semillero":
-                            var reunionesData = db.Reunion.ToList();
-                            reportDocument.SetDataSource(reunionesData);
+                        // --- LÍDER ---
+                        case "Reporte_Mis_Investigadores":
+                            querySQL = "SELECT * FROM investigadores";
                             break;
+                        case "Reporte_Mis_Proyectos":
+                            querySQL = "SELECT * FROM proyecto";
+                            break;
+                        case "Reporte_Avance_Fases":
+                            querySQL = "SELECT * FROM FasesProyecto";
+                            break;
+                        case "Reporte_Reuniones_Por_Semillero":
+                            querySQL = "SELECT * FROM reunion";
+                            break;
+                        case "Reporte_Mis_Eventos":
+                            querySQL = "SELECT * FROM evento";
+                            break;
+                    }
+
+                    // Si hay una consulta válida, llenamos la tabla plana y se la pasamos a Crystal
+                    if (!string.IsNullOrEmpty(querySQL))
+                    {
+                        System.Data.SqlClient.SqlDataAdapter adaptador = new System.Data.SqlClient.SqlDataAdapter(querySQL, conn);
+                        System.Data.DataTable tablaPlana = new System.Data.DataTable();
+                        adaptador.Fill(tablaPlana);
+
+                        // Le pasamos la tabla pura a Crystal. ¡Cero bucles infinitos!
+                        reportDocument.SetDataSource(tablaPlana);
                     }
                 }
 
+                // 🌟 LA MAGIA ESTÁ AQUÍ: Convertimos a arreglo de bytes para independizarlo del reporte
                 Stream stream = reportDocument.ExportToStream(ExportFormatType.PortableDocFormat);
-                stream.Seek(0, SeekOrigin.Begin);
+                byte[] byteArray;
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    stream.CopyTo(ms);
+                    byteArray = ms.ToArray();
+                }
 
-                string nombreArchivoDescarga = nombreReporte + "_" + DateTime.Now.ToString("yyyyMMdd") + ".pdf";
-                return File(stream, "application/pdf", nombreArchivoDescarga);
+                // Retornamos el File usando los bytes, no el stream vivo de Crystal
+                return File(byteArray, "application/pdf", nombreReporte + ".pdf");
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Error al compilar en Crystal Reports: " + ex.Message;
-                return RedirectToAction("Reportes");
+                return Content("Error crítico al generar reporte: " + ex.Message);
+            }
+            finally
+            {
+                // Limpieza EXTREMA para evitar colapso en el segundo intento
+                if (reportDocument != null)
+                {
+                    try
+                    {
+                        // 1. Limpiamos conexiones de base de datos internas del reporte
+                        if (reportDocument.DataSourceConnections != null)
+                        {
+                            reportDocument.DataSourceConnections.Clear();
+                        }
+
+                        // 2. Cerramos el documento explícitamente
+                        reportDocument.Close();
+
+                        // 3. Liberamos recursos no administrados (C++)
+                        reportDocument.Dispose();
+                    }
+                    catch
+                    {
+                        // Si falla limpiando, ignoramos para no tumbar el servidor
+                    }
+                }
             }
         }
-    } // <--- Cierre de la clase AdministradorController
+    }
 
     // ==========================================================
-    // SECTION 6: MODELOS DTO / VIEWMODELS PARA VISTAS (NIVEL NAMESPACE)
+    // SECTION 6: MODELOS DTO / VIEWMODELS PARA VISTAS 
     // ==========================================================
     public class FaseListaDTO
     {
@@ -704,6 +782,18 @@ namespace GestionSemillero1.Controllers
         public string descripción_evento { get; set; }
         public decimal ID_semillero { get; set; }
         public string nombre_semillero { get; set; }
+    }
+
+    public class LiderDropdownDTO
+    {
+        public decimal ID_usuario { get; set; }
+        public string NombreCompleto { get; set; }
+    }
+
+    public class LiderSemilleroDTO
+    {
+        public decimal ID_semillero { get; set; }
+        public decimal ID_usuario { get; set; }
     }
 }
 

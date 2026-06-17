@@ -1,10 +1,19 @@
 ﻿@model IEnumerable<GestionSemillero1.Models.semillero>
-
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    ViewBag.Title = "Gestionar Semillero";
-    string seccionActiva = ViewBag.SeccionActual;
-    decimal idSemilleroSeleccionadoSeccion4 = ViewBag.IdSemilleroSeleccionado4 ?? 0;
+    ViewBag.Title = "Gestión de Semillero";
+
+    // 1. Extraemos los datos del semillero (asumiendo que el líder solo administra uno)
+    var miSemillero = Model != null ? Model.FirstOrDefault() : null;
+    string idSem = miSemillero != null ? miSemillero.ID_semillero.ToString() : "";
+    string nomSem = miSemillero != null ? miSemillero.nombre_semillero : "";
+    string linSem = miSemillero != null ? miSemillero.linea_investigacion : "";
+    string fecSem = miSemillero != null ? miSemillero.fecha_creacion_semillero.ToString("yyyy-MM-dd") : "";
+    string desSem = miSemillero != null ? miSemillero.descripcion_semillero : "";
+    string estSem = miSemillero != null ? miSemillero.estado : "Inactivo";
+
+    // 2. Extraemos la lista de investigadores enviada desde el controlador
+    var investigadores = ViewBag.InvestigadoresDeEsteSemillero as List<GestionSemillero1.Models.InvestigadorFiltroViewModel> ?? new List<GestionSemillero1.Models.InvestigadorFiltroViewModel>();
 }
 
 <style>
@@ -28,18 +37,6 @@
         align-items: center;
         border-radius: .5rem .5rem 0 0;
     }
-
-    .nav-tabs .nav-link {
-        color: #333333 !important;
-        border: none !important;
-        text-decoration: none !important;
-    }
-
-        .nav-tabs .nav-link.active {
-            background-color: #278a5f !important;
-            color: #ffffff !important;
-            box-shadow: 0 4px 6px rgba(39, 138, 95, 0.3);
-        }
 
     .form-control-custom {
         border-radius: 6px;
@@ -65,17 +62,48 @@
         font-size: 0.85rem;
         margin-right: 8px;
     }
+
+    .badge-estado {
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+
+    .badge-activo {
+        background-color: #278a5f;
+        color: white;
+    }
+
+    .badge-inactivo {
+        background-color: #d42346;
+        color: white;
+    }
+
+    .mini-table-card {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 20px;
+    }
 </style>
 
-<div class="container-fluid">
+<div class="container-fluid p-4">
 
     <div class="mb-4 mt-2">
         <h3 class="fw-bold text-dark">
             <i class="bi bi-people-fill me-2" style="color: #278a5f;"></i>Módulo de Gestión de Semilleros
         </h3>
-        <p class="text-muted small">Administre la información de los semilleros y gestione a los investigadores vinculados.</p>
+        <p class="text-muted small">Administre la información central de su semillero y gestione a los investigadores vinculados.</p>
     </div>
 
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert" style="border-radius: 8px;">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
     @if (TempData["Error"] != null)
     {
         <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert" style="border-radius: 8px;">
@@ -84,213 +112,215 @@
         </div>
     }
 
-    <div class="row">
-        <!-- Contenedor principal al 100% -->
-        <div class="col-12">
+    <div class="row mb-5">
+        <div class="col-xl-8 col-lg-7 mb-4 mb-lg-0">
+            <div class="card shadow-sm p-4 bg-white" style="border-radius: 12px; height: 100%; border: none;">
+                <h5 class="fw-bold text-dark mb-4 border-bottom pb-3">
+                    <i class="bi bi-pencil-square me-2" style="color:#278a5f;"></i>Actualizar Información del Semillero
+                </h5>
 
-            <!-- Pestañas de Navegación -->
-            <ul class="nav nav-tabs border-0 mb-4 bg-white p-2 shadow-sm" style="border-radius: 12px; gap: 10px;">
-                <li class="nav-item">
-                    <button class="nav-link border-0 fw-bold px-4 py-2 @(seccionActiva != "investigadores" ? "active" : "")"
-                            id="btn-tab-semilleros" onclick="cambiarVistaPestaña('semilleros')" style="border-radius: 8px; transition: all 0.2s;">
-                        <i class="bi bi-building me-2"></i>Gestión de Semilleros
-                    </button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link border-0 fw-bold px-4 py-2 @(seccionActiva == "investigadores" ? "active" : "")"
-                            id="btn-tab-investigadores" onclick="cambiarVistaPestaña('investigadores')" style="border-radius: 8px; transition: all 0.2s;">
-                        <i class="bi bi-people-fill me-2"></i>Gestión de Investigadores
-                    </button>
-                </li>
-            </ul>
+                <form action="@Url.Action("GestionarSemillero", "Lider")" method="POST">
+                    <input type="hidden" name="accion" value="actualizar" />
 
-            <div class="tab-content">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold text-muted"><span class="step-badge text-white" style="background-color: #278a5f;">1</span> Identificación</label>
+                            <input type="text" name="ID_semillero" class="form-control-custom mb-2 text-muted" value="@idSem" readonly style="background-color:#f8f9fa; cursor: not-allowed;" />
+                            <input type="text" name="nombre_semillero" class="form-control-custom" value="@nomSem" placeholder="Nombre del semillero" maxlength="45" required />
+                        </div>
 
-                <!-- PESTAÑA 1: GESTIÓN DE SEMILLEROS -->
-                <div class="tab-pane fade @(seccionActiva != "investigadores" ? "show active" : "")">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold text-muted"><span class="step-badge text-white" style="background-color: #278a5f;">2</span> Clasificación</label>
+                            <input type="text" name="linea_investigacion" class="form-control-custom mb-2" value="@linSem" placeholder="Línea de investigación" maxlength="40" required />
+                            <input type="date" name="fecha_creacion_semillero" class="form-control-custom text-muted" value="@fecSem" readonly style="background-color:#f8f9fa; cursor: not-allowed;" required />
+                        </div>
 
-                    @using (Html.BeginForm("GestionarSemillero", "Lider", FormMethod.Post, new { id = "formSemillero" }))
+                        <div class="col-12 mb-3">
+                            <label class="form-label small fw-bold text-muted"><span class="step-badge text-white" style="background-color: #278a5f;">3</span> Descripción General</label>
+                            <textarea name="descripcion_semillero" class="form-control-custom" rows="3" maxlength="255" required>@desSem</textarea>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-start mt-3 gap-2">
+                        <button type="submit" class="btn text-white px-5 fw-bold" style="background-color: #c98d26; border-radius: 8px;">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Actualizar Semillero
+                        </button>
+                        <a href="@Url.Action("GestionarSemillero", "Lider")" class="btn btn-secondary px-4 fw-bold text-decoration-none" style="border-radius: 8px;">
+                            <i class="bi bi-x-circle me-2"></i>Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-5 mb-4 mb-lg-0">
+            <div class="mini-table-card shadow-sm h-100 d-flex flex-column justify-content-center">
+                <div class="text-center mb-4">
+                    <div class="d-inline-block p-3 rounded-circle mb-3" style="background-color: #e9f2ee;">
+                        <i class="bi bi-diagram-3-fill fs-1" style="color: #278a5f;"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">Resumen Actual</h5>
+                    @if (estSem.ToLower() == "activo")
                     {
-                        <div class="row">
-                            <div class="col-md-6 mb-4">
-                                <div class="card h-100 shadow-sm border-0 p-3">
-                                    <h5 class="card-title mb-3 fw-bold"><span class="step-badge text-white" style="background-color: #278a5f;">1</span> Identificación</h5>
-                                    <div class="mb-3">
-                                        <input type="text" id="txtID" name="ID_semillero" class="form-control-custom" readonly style="background-color: #f8f9fa; cursor: not-allowed;" required placeholder="ID asignado" />
-                                    </div>
-                                    <div>
-                                        <input type="text" id="txtNombre" name="nombre_semillero" class="form-control-custom" placeholder="Nombre del semillero" required />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6 mb-4">
-                                <div class="card h-100 shadow-sm border-0 p-3">
-                                    <h5 class="card-title mb-3 fw-bold"><span class="step-badge text-white" style="background-color: #278a5f;">2</span> Clasificación</h5>
-                                    <div class="mb-3">
-                                        <input type="text" id="txtLinea" name="linea_investigacion" class="form-control-custom" placeholder="Línea de investigación" required />
-                                    </div>
-                                    <div>
-                                        <input type="date" id="txtFecha" name="fecha_creacion_semillero" class="form-control-custom" required />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card mb-4 shadow-sm border-0 p-3">
-                            <h5 class="card-title mb-3 fw-bold"><span class="step-badge text-white" style="background-color: #278a5f;">3</span> Descripción General</h5>
-                            <textarea id="txtDescripcion" name="descripcion_semillero" class="form-control-custom" rows="3" placeholder="Escriba la descripción del semillero..."></textarea>
-                        </div>
-
-                        <div class="d-flex flex-wrap gap-2 mb-4">
-                            <button type="submit" name="accion" value="actualizar" class="btn text-white px-4 fw-bold" style="background-color: #c98d26; border-radius: 8px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
-                            <button type="submit" name="accion" value="eliminar" class="btn text-white px-4 fw-bold" style="background-color: #d42346; border-radius: 8px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
-                            <button type="button" id="btnLimpiar" class="btn btn-secondary text-white px-4 fw-bold" style="border-radius: 8px;"><i class="bi bi-eraser me-2"></i>Limpiar</button>
-                        </div>
+                        <span class="badge badge-activo px-3">Estado: ACTIVO</span>
                     }
+                    else
+                    {
+                        <span class="badge badge-inactivo px-3">Estado: INACTIVO</span>
+                    }
+                </div>
 
-                    <div class="table-responsive-container shadow-sm p-0 mb-4" style="border-radius: 8px; overflow: hidden; background-color: white;">
-                        <div class="table-header-banner text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%);">
-                            <div><i class="bi bi-table me-2"></i>Semilleros del Sistema</div>
-                            <small class="text-white-50 fw-normal"><i class="bi bi-info-circle me-1"></i>Haga clic en una fila para editar</small>
-                        </div>
-                        <div class="table-responsive p-3">
-                            <table class="table table-hover align-middle mb-0" id="tablaSemilleros" style="cursor: pointer;">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Nombre</th>
-                                        <th>Fecha Creación</th>
-                                        <th>Línea de Investigación</th>
-                                        <th>Estado</th>
-                                        <th style="display:none;">Descripción Oculta</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if (Model != null && Model.Any())
+                <table class="table table-sm table-borderless mt-2">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted fw-bold small" style="width: 40%;">ID Semillero:</td>
+                            <td class="text-dark fw-semibold text-end">#@idSem</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold small">Nombre:</td>
+                            <td class="text-dark fw-semibold text-end">@nomSem</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold small">Línea Enfoque:</td>
+                            <td class="text-dark fw-semibold text-end">@linSem</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold small">Fecha Creación:</td>
+                            <td class="text-dark fw-semibold text-end">@fecSem</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm bg-white" style="border-radius: 12px; padding: 0; border: none; overflow: hidden;">
+        <div class="table-header-banner text-white justify-content-between" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%);">
+            <div>
+                <i class="bi bi-people-fill text-white me-2"></i>Miembros Vinculados: @(string.IsNullOrEmpty(nomSem) ? "Semillero Actual" : nomSem)
+            </div>
+            <button type="button" id="btnAbrirModalAgregar" class="btn btn-sm btn-light fw-bold shadow-sm" style="color: #278a5f; border-radius: 6px;">
+                <i class="bi bi-person-plus-fill me-1"></i> Agregar Investigador
+            </button>
+        </div>
+
+        <div class="table-responsive p-3 border-bottom">
+            <table class="table table-hover align-middle mb-0 text-center" id="tablaInvestigadores" style="cursor:pointer;">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID Usuario</th>
+                        <th>Nombre Completo</th>
+                        <th>Correo Institucional</th>
+                        <th>Estado Cuenta</th>
+                        <th>Info</th>
+                        <th style="display:none;">ID Usuario Oculto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (ViewBag.InvestigadoresDeEsteSemillero != null && ((System.Collections.IEnumerable)ViewBag.InvestigadoresDeEsteSemillero).GetEnumerator().MoveNext())
+                    {
+                        foreach (dynamic inv in ViewBag.InvestigadoresDeEsteSemillero)
+                        {
+                            string estadoInv = inv.estado_usuario != null ? inv.estado_usuario.ToString().ToLower() : "";
+
+                            <tr onclick="seleccionarInvestigador(this, '@inv.ID_usuario', '@inv.NombreCompleto')">
+                                <td class="fw-bold text-dark">@inv.ID_investigador</td>
+                                <td style="color: #32325d; font-weight: 600;">@inv.NombreCompleto</td>
+                                <td class="text-muted">@inv.correo_usuario</td>
+                                <td>
+                                    @if (estadoInv == "activo" || estadoInv == "activa")
                                     {
-                                        foreach (var item in Model)
-                                        {
-                                            <tr>
-                                                <td class="fw-bold ID-celda">@item.ID_semillero</td>
-                                                <td style="color: #32325d; font-weight: 600;">@item.nombre_semillero</td>
-                                                <td>@(item.fecha_creacion_semillero != null ? item.fecha_creacion_semillero.ToString("yyyy-MM-dd") : "")</td>
-                                                <td>@item.linea_investigacion</td>
-                                                <td><span class="badge text-white p-2" style="background-color: #278a5f; border-radius:6px;">@item.estado</span></td>
-                                                <td style="display:none;" class="descripcion-oculta">@item.descripcion_semillero</td>
-                                            </tr>
-                                        }
+                                        <span class="badge text-white px-3 py-1" style="background-color: #278a5f; border-radius:6px;">Activo</span>
                                     }
                                     else
                                     {
-                                        <tr>
-                                            <td colspan="6" class="text-center p-4 text-muted">
-                                                <i class="bi bi-info-circle me-2"></i> Aún no tienes semilleros asignados. Contacta al Administrador.
-                                            </td>
-                                        </tr>
+                                        <span class="badge bg-danger text-white px-3 py-1" style="border-radius:6px;">Inactivo</span>
                                     }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- PESTAÑA 2: GESTIÓN DE INVESTIGADORES -->
-                <div class="tab-pane fade @(seccionActiva == "investigadores" ? "show active" : "")">
-
-                    <div class="row">
-                        <!-- La tabla ocupa todo el ancho (col-12) -->
-                        <div class="col-12 mb-4">
-                            <div class="table-responsive-container shadow-sm p-0 h-100" style="border-radius: 8px; overflow: hidden; background-color: white;">
-
-                                <!-- Banner Superior -->
-                                <div class="table-header-banner text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%);">
-                                    <div><i class="bi bi-people-fill me-2"></i>Miembros Vinculados: @(ViewBag.NombreSemilleroSeleccionado4 ?? "Todos")</div>
-                                    <button type="button" id="btnAbrirModalAgregar" class="btn btn-sm btn-light fw-bold shadow-sm" style="color: #278a5f; border-radius: 6px;">
-                                        <i class="bi bi-person-plus-fill me-1"></i> Agregar Investigador
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
+                                            onclick="verInfoInvestigador(event, this)"
+                                            data-id="@inv.ID_investigador"
+                                            data-idusuario="@inv.ID_usuario"
+                                            data-nombre="@inv.NombreCompleto"
+                                            data-correo="@inv.correo_usuario"
+                                            data-estado="@estadoInv">
+                                        <i class="bi bi-info-circle-fill fs-5" title="Ver perfil del investigador"></i>
                                     </button>
-                                </div>
+                                </td>
+                                <td style="display:none;" class="id-user-oculto">@inv.ID_usuario</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted p-5 font-italic">
+                                <i class="bi bi-person-x fs-2 d-block mb-2"></i>Actualmente no hay investigadores registrados en este semillero.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
 
-                                <div class="table-responsive p-3 border-bottom">
-                                    <table class="table table-hover align-middle mb-0" id="tablaInvestigadores" style="cursor:pointer;">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Nombre Completo</th>
-                                                <th>Correo Institucional</th>
-                                                <th>Estado Cuenta</th>
-                                                <th style="display:none;">ID Usuario Oculto</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @if (ViewBag.InvestigadoresDeEsteSemillero != null && (ViewBag.InvestigadoresDeEsteSemillero as List<GestionSemillero1.Models.InvestigadorFiltroViewModel>).Any())
-                                            {
-                                                foreach (var inv in ViewBag.InvestigadoresDeEsteSemillero as List<GestionSemillero1.Models.InvestigadorFiltroViewModel>)
-                                                {
-                                                    <tr>
-                                                        <td class="fw-bold">@inv.ID_investigador</td>
-                                                        <td style="color: #32325d; font-weight: 600;">@inv.NombreCompleto</td>
-                                                        <td>@inv.correo_usuario</td>
-                                                        <td>
-                                                            @if (inv.estado_usuario != null && (inv.estado_usuario.ToLower() == "activo" || inv.estado_usuario.ToLower() == "activa"))
-                                                            {
-                                                                <span class="badge text-white p-2" style="background-color: #278a5f; border-radius:6px;">@inv.estado_usuario</span>
-                                                            }
-                                                            else
-                                                            {
-                                                                <span class="badge bg-danger text-white p-2" style="border-radius:6px;">@inv.estado_usuario</span>
-                                                            }
-                                                        </td>
-                                                        <td style="display:none;" class="id-user-oculto">@inv.ID_usuario</td>
-                                                    </tr>
-                                                }
-                                            }
-                                            else
-                                            {
-                                                <tr><td colspan="4" class="text-center text-muted p-5">Actualmente no hay investigadores registrados en este semillero.</td></tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <!-- BARRA DE ACCIONES AL FINAL DE LA TABLA -->
-                                <div class="bg-light p-3 d-flex flex-wrap justify-content-between align-items-center">
-                                    <div class="text-muted small">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        <span id="infoSeleccion" class="fw-bold">Ningún investigador seleccionado en la tabla</span>
-                                    </div>
-                                    <div class="d-flex gap-2">
-                                        <button type="button" onclick="ejecutarAccionInvestigador('habilitar')" class="btn btn-outline-success fw-bold bg-white" style="border-radius: 8px;">
-                                            <i class="bi bi-person-check me-1"></i> Habilitar
-                                        </button>
-                                        <button type="button" onclick="ejecutarAccionInvestigador('deshabilitar')" class="btn btn-outline-warning text-dark fw-bold bg-white" style="border-radius: 8px;">
-                                            <i class="bi bi-person-x me-1"></i> Deshabilitar
-                                        </button>
-                                        <button type="button" onclick="ejecutarAccionInvestigador('eliminar')" class="btn btn-outline-danger fw-bold bg-white" style="border-radius: 8px;">
-                                            <i class="bi bi-trash me-1"></i> Eliminar
-                                        </button>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+        <div class="bg-light p-3 d-flex flex-wrap justify-content-between align-items-center">
+            <div class="text-muted small">
+                <i class="bi bi-info-circle me-1"></i>
+                <span id="infoSeleccion" class="fw-bold">Ningún investigador seleccionado en la tabla</span>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" onclick="ejecutarAccionInvestigador('habilitar')" class="btn btn-outline-success fw-bold bg-white disabled" id="btnHabilitar" style="border-radius: 8px;">
+                    <i class="bi bi-person-check me-1"></i> Habilitar
+                </button>
+                <button type="button" onclick="ejecutarAccionInvestigador('deshabilitar')" class="btn btn-outline-warning text-dark fw-bold bg-white disabled" id="btnDeshabilitar" style="border-radius: 8px;">
+                    <i class="bi bi-person-x me-1"></i> Deshabilitar
+                </button>
+                <button type="button" onclick="ejecutarAccionInvestigador('eliminar')" class="btn btn-outline-danger fw-bold bg-white disabled" id="btnEliminarUsr" style="border-radius: 8px;">
+                    <i class="bi bi-trash me-1"></i> Eliminar
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- FORMULARIO OCULTO PARA PROCESAR LAS ACCIONES DE INVESTIGADORES -->
 <form id="formAccionesFila" action="@Url.Action("ProcesarAccionesInvestigadores", "Lider")" method="post" style="display:none;">
-    <input type="hidden" id="hiddenFilaSemilleroId" name="idSemilleroSeleccionado" value="@idSemilleroSeleccionadoSeccion4" />
+    <input type="hidden" id="hiddenFilaSemilleroId" name="idSemilleroSeleccionado" value="@idSem" />
     <input type="hidden" id="hiddenFilaUsuarioId" name="idUsuarioSeleccionado" value="" />
     <input type="hidden" id="hiddenFilaAccion" name="accionInvestigador" value="" />
 </form>
 
-<!-- Modal Agregar Investigador -->
+<div class="modal fade" id="modalInfoInvestigador" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+            <div class="modal-header text-white" style="background-color: #278a5f; border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                <h6 class="modal-title fw-bold"><i class="bi bi-person-vcard me-2"></i>Ficha del Investigador</h6>
+                <button type="button" class="border-0 bg-transparent fs-5 text-white text-decoration-none" onclick="cerrarModalInfo()" style="outline: none;">&times;</button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="display-1 text-muted mb-3">
+                    <i class="bi bi-person-circle"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1" id="modInvNombre">Nombre Apellido</h5>
+                <p class="text-muted small mb-3" id="modInvCorreo">correo@sena.edu.co</p>
+
+                <div class="d-flex justify-content-between border-top border-bottom py-2 mb-3">
+                    <div class="text-center w-50 border-end">
+                        <small class="text-muted d-block fw-bold" style="font-size:0.7rem;">ID USUARIO</small>
+                        <strong class="text-dark fs-5" id="modInvIdUsuario">0000</strong>
+                    </div>
+                    <div class="text-center w-50">
+                        <small class="text-muted d-block fw-bold" style="font-size:0.7rem;">ESTADO</small>
+                        <span id="modInvEstado" class="badge bg-success mt-1 px-3">Activo</span>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-secondary btn-sm w-100 fw-bold" onclick="cerrarModalInfo()">Cerrar Perfil</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="modalAgregarInvestigador" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius:12px; overflow: hidden; border: none;">
@@ -301,10 +331,10 @@
             @using (Html.BeginForm("ProcesarAccionesInvestigadores", "Lider", FormMethod.Post))
             {
                 <div class="modal-body p-4">
-                    <input type="hidden" name="idSemilleroSeleccionado" value="@idSemilleroSeleccionadoSeccion4" />
+                    <input type="hidden" name="idSemilleroSeleccionado" value="@idSem" />
                     <input type="hidden" name="accionInvestigador" value="agregar" />
 
-                    <p class="small text-muted mb-3">Vinculando personal al grupo ID: <strong style="color: #278a5f;">@idSemilleroSeleccionadoSeccion4</strong></p>
+                    <p class="small text-muted mb-3">Vinculando personal al grupo ID: <strong style="color: #278a5f;">@idSem</strong></p>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -354,129 +384,103 @@
     </div>
 </div>
 
-<script>
-    function cambiarVistaPestaña(tipo) {
-        if(tipo === 'semilleros') {
-            window.location.href = `@Url.Action("GestionarSemillero", "Lider")?seccionCargada=semilleros`;
-        } else if(tipo === 'investigadores') {
-            window.location.href = `@Url.Action("GestionarSemillero", "Lider")?seccionCargada=investigadores`;
-        }
-    }
+@section scripts {
+    <script>
+        // --- LÓGICA DE SELECCIÓN DE FILAS EN LA TABLA ---
+        function seleccionarInvestigador(fila, idUsuario, nombreCompleto) {
+            const filas = document.querySelectorAll("#tablaInvestigadores tbody tr");
+            filas.forEach(f => f.style.backgroundColor = "transparent");
 
-    // Procesar acción enviando el formulario oculto
-    function ejecutarAccionInvestigador(accion) {
-        const idUsuario = document.getElementById("hiddenFilaUsuarioId").value;
-        const idSemillero = document.getElementById("hiddenFilaSemilleroId").value;
+            fila.style.backgroundColor = "rgba(39, 138, 95, 0.12)";
 
-        if (!idSemillero || idSemillero === "0") {
-            alert("No se ha identificado el semillero al que pertenece este investigador.");
-            return;
+            document.getElementById("hiddenFilaUsuarioId").value = idUsuario;
+            document.getElementById("infoSeleccion").innerHTML = `Seleccionado: <span style="color: #278a5f;">${nombreCompleto}</span>`;
+
+            document.getElementById("btnHabilitar").classList.remove("disabled");
+            document.getElementById("btnDeshabilitar").classList.remove("disabled");
+            document.getElementById("btnEliminarUsr").classList.remove("disabled");
         }
 
-        if (!idUsuario) {
-            alert("Por favor seleccione un investigador haciendo clic sobre su fila en la tabla antes de continuar.");
-            return;
+        // --- LÓGICA DE BOTONES INFERIORES ---
+        function ejecutarAccionInvestigador(accion) {
+            const idUsuario = document.getElementById("hiddenFilaUsuarioId").value;
+            const idSemillero = document.getElementById("hiddenFilaSemilleroId").value;
+
+            if (!idSemillero || idSemillero === "0") {
+                alert("No se ha identificado el semillero. Actualice la página e intente de nuevo.");
+                return;
+            }
+
+            if (!idUsuario) {
+                alert("Por favor seleccione un investigador en la tabla antes de continuar.");
+                return;
+            }
+
+            let msjAccion = accion === 'eliminar' ? 'eliminar permanentemente a' : accion;
+
+            if (confirm(`¿Está seguro de que desea ${msjAccion} este investigador?`)) {
+                document.getElementById("hiddenFilaAccion").value = accion;
+                document.getElementById("formAccionesFila").submit();
+            }
         }
 
-        let verboAccion = accion === 'eliminar' ? 'eliminar del semillero a' : accion;
+        // --- LÓGICA DEL MODAL DE INFORMACIÓN (EL ÍCONO "!") ---
+        function verInfoInvestigador(e, btn) {
+            e.stopPropagation();
 
-        if (confirm(`¿Está seguro de que desea ${verboAccion} este investigador?`)) {
-            document.getElementById("hiddenFilaAccion").value = accion;
-            document.getElementById("formAccionesFila").submit();
-        }
-    }
+            const data = btn.dataset;
+            document.getElementById("modInvNombre").innerText = data.nombre;
+            document.getElementById("modInvCorreo").innerText = data.correo;
+            document.getElementById("modInvIdUsuario").innerText = data.idusuario;
 
-    document.addEventListener("DOMContentLoaded", function () {
-        const tablaSemilleros = document.getElementById("tablaSemilleros");
-        const txtID = document.getElementById("txtID");
-        const txtNombre = document.getElementById("txtNombre");
-        const txtLinea = document.getElementById("txtLinea");
-        const txtFecha = document.getElementById("txtFecha");
-        const txtDescripcion = document.getElementById("txtDescripcion");
-        const btnLimpiar = document.getElementById("btnLimpiar");
+            const badge = document.getElementById("modInvEstado");
+            if (data.estado === "activo" || data.estado === "activa") {
+                badge.className = "badge bg-success mt-1 px-3";
+                badge.innerText = "Activo";
+            } else {
+                badge.className = "badge bg-danger mt-1 px-3";
+                badge.innerText = "Inactivo";
+            }
 
-        const tablaInvestigadores = document.getElementById("tablaInvestigadores");
-        const infoSeleccion = document.getElementById("infoSeleccion");
-        const hiddenUsuarioId = document.getElementById("hiddenFilaUsuarioId");
-
-        const btnAbrirModal = document.getElementById("btnAbrirModalAgregar");
-        const modalElement = document.getElementById("modalAgregarInvestigador");
-        const btnCerrarX = document.getElementById("btnCerrarModalX");
-        const btnCerrarCancel = document.getElementById("btnCerrarModalCancel");
-
-        // Modal Agregar
-        if (btnAbrirModal) {
-            btnAbrirModal.addEventListener("click", function () {
-                const idSemillero = document.getElementById("hiddenFilaSemilleroId").value;
-                if (idSemillero === "0" || idSemillero === "") {
-                    alert("Asegúrese de estar consultando un semillero válido antes de agregar investigadores.");
-                    return;
-                }
-                modalElement.classList.add("show");
-                modalElement.style.display = "block";
-                document.body.classList.add("modal-open");
-            });
+            const modal = document.getElementById("modalInfoInvestigador");
+            modal.style.display = "block";
+            modal.style.backgroundColor = "rgba(0,0,0,0.5)";
+            setTimeout(() => { modal.classList.add("show"); }, 10);
+            document.body.style.overflow = "hidden";
         }
 
-        function cerrarModal() {
-            modalElement.classList.remove("show");
-            modalElement.style.display = "none";
-            document.body.classList.remove("modal-open");
+        function cerrarModalInfo() {
+            const modal = document.getElementById("modalInfoInvestigador");
+            modal.classList.remove("show");
+            setTimeout(() => { modal.style.display = "none"; document.body.style.overflow = "auto"; }, 200);
         }
-        if (btnCerrarX) btnCerrarX.addEventListener("click", cerrarModal);
-        if (btnCerrarCancel) btnCerrarCancel.addEventListener("click", cerrarModal);
 
-        // Selección de filas Semilleros (Pestaña 1)
-        if (tablaSemilleros) {
-            tablaSemilleros.querySelectorAll("tbody tr").forEach(fila => {
-                fila.addEventListener("click", function () {
-                    if (this.querySelector(".ID-celda")) {
-                        tablaSemilleros.querySelectorAll("tbody tr").forEach(r => r.style.backgroundColor = "");
-                        this.style.backgroundColor = "rgba(39, 138, 95, 0.08)";
+        // --- LÓGICA DEL MODAL PARA AGREGAR INVESTIGADOR ---
+        document.addEventListener("DOMContentLoaded", function () {
+            const btnAbrirModal = document.getElementById("btnAbrirModalAgregar");
+            const modalElement = document.getElementById("modalAgregarInvestigador");
+            const btnCerrarX = document.getElementById("btnCerrarModalX");
+            const btnCerrarCancel = document.getElementById("btnCerrarModalCancel");
 
-                        txtID.value = this.cells[0].innerText.trim();
-                        txtNombre.value = this.cells[1].innerText.trim();
-
-                        let fechaTexto = this.cells[2].innerText.trim();
-                        if(fechaTexto.length > 10) fechaTexto = fechaTexto.substring(0, 10);
-                        txtFecha.value = fechaTexto;
-
-                        txtLinea.value = this.cells[3].innerText.trim();
-                        txtDescripcion.value = this.querySelector(".descripcion-oculta").innerText.trim();
-                    }
+            if (btnAbrirModal) {
+                btnAbrirModal.addEventListener("click", function () {
+                    modalElement.classList.add("show");
+                    modalElement.style.display = "block";
+                    modalElement.style.backgroundColor = "rgba(0,0,0,0.5)";
+                    document.body.style.overflow = "hidden";
                 });
-            });
-        }
+            }
 
-        if (btnLimpiar) {
-            btnLimpiar.addEventListener("click", function () {
-                if(tablaSemilleros) {
-                    tablaSemilleros.querySelectorAll("tbody tr").forEach(r => r.style.backgroundColor = "");
-                }
-                txtID.value = "";
-                txtNombre.value = "";
-                txtLinea.value = "";
-                txtFecha.value = "";
-                txtDescripcion.value = "";
-            });
-        }
+            function cerrarModalAdd() {
+                modalElement.classList.remove("show");
+                setTimeout(() => {
+                    modalElement.style.display = "none";
+                    document.body.style.overflow = "auto";
+                }, 200);
+            }
 
-        // Recuperar la lógica de selección de Investigadores (Pestaña 2)
-        if (tablaInvestigadores) {
-            tablaInvestigadores.querySelectorAll("tbody tr").forEach(fila => {
-                fila.addEventListener("click", function () {
-                    if (this.querySelector(".id-user-oculto")) {
-                        tablaInvestigadores.querySelectorAll("tbody tr").forEach(r => r.style.backgroundColor = "");
-                        this.style.backgroundColor = "rgba(39, 138, 95, 0.12)";
-
-                        const idUser = this.querySelector(".id-user-oculto").innerText.trim();
-                        const nombreCompleto = this.cells[1].innerText.trim();
-
-                        hiddenUsuarioId.value = idUser;
-                        infoSeleccion.innerHTML = `Seleccionado: <span style="color: #278a5f;">${nombreCompleto}</span>`;
-                    }
-                });
-            });
-        }
-    });
-</script>
+            if (btnCerrarX) btnCerrarX.addEventListener("click", cerrarModalAdd);
+            if (btnCerrarCancel) btnCerrarCancel.addEventListener("click", cerrarModalAdd);
+        });
+    </script>
+}

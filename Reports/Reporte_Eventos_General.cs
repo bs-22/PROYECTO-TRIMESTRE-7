@@ -16,14 +16,14 @@ namespace GestionSemillero1.Reports {
     using CrystalDecisions.CrystalReports.Engine;
     
     
-    public class Reporte_Asistencia_Reuniones : ReportClass {
+    public class Reporte_Eventos_General : ReportClass {
         
-        public Reporte_Asistencia_Reuniones() {
+        public Reporte_Eventos_General() {
         }
         
         public override string ResourceName {
             get {
-                return "Reporte_Asistencia_Reuniones.rpt";
+                return "Reporte_Eventos_General.rpt";
             }
             set {
                 // Do nothing
@@ -41,7 +41,7 @@ namespace GestionSemillero1.Reports {
         
         public override string FullResourceName {
             get {
-                return "GestionSemillero1.Reports.Reporte_Asistencia_Reuniones.rpt";
+                return "GestionSemillero1.Reports.Reporte_Eventos_General.rpt";
             }
             set {
                 // Do nothing
@@ -90,9 +90,9 @@ namespace GestionSemillero1.Reports {
     }
     
     [System.Drawing.ToolboxBitmapAttribute(typeof(CrystalDecisions.Shared.ExportOptions), "report.bmp")]
-    public class CachedReporte_Asistencia_Reuniones : Component, ICachedReport {
+    public class CachedReporte_Eventos_General : Component, ICachedReport {
         
-        public CachedReporte_Asistencia_Reuniones() {
+        public CachedReporte_Eventos_General() {
         }
         
         [Browsable(false)]
@@ -129,7 +129,7 @@ namespace GestionSemillero1.Reports {
         }
         
         public virtual CrystalDecisions.CrystalReports.Engine.ReportDocument CreateReport() {
-            Reporte_Asistencia_Reuniones rpt = new Reporte_Asistencia_Reuniones();
+            Reporte_Eventos_General rpt = new Reporte_Eventos_General();
             rpt.Site = this.Site;
             return rpt;
         }

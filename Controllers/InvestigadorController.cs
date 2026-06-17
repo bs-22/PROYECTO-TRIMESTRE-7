@@ -27,11 +27,12 @@ namespace GestionSemillero1.Controllers
                              select r).Distinct();
 
             // 🌟 NUEVO: Extraer los primeros 5 IDs asignados únicos para el buscador
-            ViewBag.TopIDs = queryBase.Select(r => r.ID_reunion.ToString())
-                                      .Distinct()
-                                      .Take(5)
-                                      .ToList();
-
+            ViewBag.TopIDs = queryBase.Select(r => r.ID_reunion) // Select the decimal ID first
+                           .Distinct()                // Filter unique IDs in the DB
+                           .Take(5)                   // Take top 5 in the DB
+                           .AsEnumerable()            // Bring these 5 numbers into memory
+                           .Select(id => id.ToString()) // Now convert to string safely
+                           .ToList();
             // 🌟 NUEVO: Extraer las primeras 5 Fechas asignadas únicas
             var fechasRaw = queryBase.Select(r => r.fecha_reunion)
                                      .Distinct()

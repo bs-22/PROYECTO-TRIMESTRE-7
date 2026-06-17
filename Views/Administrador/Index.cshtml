@@ -160,7 +160,23 @@
                         <tbody>
                             @foreach (var s in (List<GestionSemillero1.Models.semillero>)ViewBag.TodosSemilleros)
                             {
-                                <tr style="cursor:pointer;" onclick="cargarFormulario(@s.ID_semillero, '@s.nombre_semillero', '@s.linea_investigacion', '@s.descripcion_semillero')">
+                                // Lógica extraída del controlador para identificar al líder actual de esta fila
+                                var lideresActuales = ViewBag.LideresActuales as IEnumerable<dynamic>;
+                                string idLiderAsignado = "";
+
+                                if (lideresActuales != null)
+                                {
+                                    foreach (var liderAct in lideresActuales)
+                                    {
+                                        if (liderAct.ID_semillero == s.ID_semillero)
+                                        {
+                                            idLiderAsignado = liderAct.ID_usuario.ToString();
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                <tr style="cursor:pointer;" onclick="cargarFormulario(@s.ID_semillero, '@s.nombre_semillero', '@s.linea_investigacion', '@s.descripcion_semillero', '@idLiderAsignado')">
                                     <td>@s.ID_semillero</td>
                                     <td>@s.nombre_semillero</td>
                                     <td class="text-center"><span class="badge @(s.estado == "activo" ? "bg-success" : "bg-danger")">@s.estado</span></td>
@@ -191,11 +207,15 @@
 
                     <div class="mb-2 position-relative">
                         <label class="small fw-bold text-secondary">Líder asignado</label>
-                        <select class="form-select form-select-sm" required>
-                            <option value="">-- Seleccione --</option>
-                            @foreach (var l in ViewBag.ComboLideres)
+                        <select name="idLiderSeleccionado" id="ddlLider" class="form-select form-select-sm">
+                            <option value="">-- Mantener actual / Seleccione para cambiar --</option>
+                            @foreach (dynamic l in ViewBag.ComboLideres)
                             {
-                                <option value="@l.ID_usuario">@l.correo_usuario</option>
+                                // Utilizamos dynamic y try-catch oculto mediante propiedades para evitar errores si usas DTO o modelo Usuario
+                                string idValor = l.GetType().GetProperty("ID_usuario") != null ? l.ID_usuario.ToString() : "";
+                                string nombreMostrado = l.GetType().GetProperty("NombreCompleto") != null ? l.NombreCompleto : l.correo_usuario;
+
+                                <option value="@idValor" data-nombre="@nombreMostrado">@nombreMostrado</option>
                             }
                         </select>
                     </div>
@@ -224,12 +244,38 @@
 
 <script>
     // --- 1. Lógica del Formulario de Acciones ---
-    function cargarFormulario(id, nombre, linea, desc) {
+    function cargarFormulario(id, nombre, linea, desc, idLiderActual) {
         $("#hdnID").val(id);
         $("#txtIdVisual").val(id);
         $("#txtNombre").val(nombre);
         $("#txtLinea").val(linea);
         $("#txtDesc").val(desc);
+
+        // LÓGICA MÁGICA DEL LÍDER
+        let selectLider = $("#ddlLider");
+
+        // 1. Restaurar el select limpiando bloqueos anteriores
+        selectLider.find("option").each(function () {
+            $(this).prop("disabled", false);
+            let nombreOriginal = $(this).attr("data-nombre");
+            if (nombreOriginal) {
+                $(this).text(nombreOriginal);
+            }
+        });
+
+        // 2. Si el semillero ya tiene un líder en la base de datos...
+        if (idLiderActual && idLiderActual !== "") {
+            selectLider.val(idLiderActual); // Seleccionamos la opción
+
+            let opcionActual = selectLider.find("option:selected");
+            if (opcionActual.length > 0) {
+                // Le agregamos el aviso visual y lo bloqueamos
+                opcionActual.text(opcionActual.attr("data-nombre") + " (Líder Actual)");
+                opcionActual.prop("disabled", true);
+            }
+        } else {
+            selectLider.val(""); // Lo dejamos en la primera opción por defecto
+        }
 
         $("#formSemillero").find('.error-border').removeClass('error-border');
         $(".msg-error").hide();
@@ -242,6 +288,17 @@
         $("#formSemillero")[0].reset();
         $("#hdnID").val("0");
         $("#txtIdVisual").val("");
+
+        // Restaurar el select de líderes a su estado limpio para registrar nuevos
+        let selectLider = $("#ddlLider");
+        selectLider.find("option").each(function () {
+            $(this).prop("disabled", false);
+            let nombreOriginal = $(this).attr("data-nombre");
+            if (nombreOriginal) {
+                $(this).text(nombreOriginal);
+            }
+        });
+        selectLider.val("");
 
         $("#formSemillero").find('.error-border').removeClass('error-border');
         $(".msg-error").hide();

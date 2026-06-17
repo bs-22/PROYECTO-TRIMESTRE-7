@@ -5,7 +5,6 @@
 }
 
 <style>
-
     /* Estilo para todas las celdas de las tablas, obligando a color negro */
     .table-text-black td, .table-text-black td span {
         color: #000000 !important;
@@ -26,10 +25,17 @@
         color: #ffffff !important;
         box-shadow: 0 4px 6px rgba(39, 138, 95, 0.3) !important;
     }
-
 </style>
 
 <div class="container-fluid">
+
+    <!-- 🌟 NUEVO ENCABEZADO SUPERIOR 🌟 -->
+    <div class="mb-4 mt-2">
+        <h3 class="fw-bold text-dark">
+            <i class="bi bi-folder-plus me-2" style="color: #278a5f;"></i>Módulo de Gestión de Proyectos
+        </h3>
+        <p class="text-muted small">Cree y administre los proyectos de investigación, estructure sus fases operativas y asigne las actividades correspondientes a cada etapa.</p>
+    </div>
 
     @if (TempData["ErrorProyecto"] != null)
     {
@@ -73,10 +79,10 @@
                                 <input type="text" id="p_ID" name="ID_proyecto" class="form-control-custom" value="@ViewBag.NextProyectoID" readonly style="background-color:#f6f9fc;" required />
                             </div>
                             <div class="mb-3">
-                                <input type="text" id="p_Nombre" name="nombre_proyecto" class="form-control-custom" placeholder="Nombre descriptivo del proyecto" required />
+                                <input type="text" id="p_Nombre" name="nombre_proyecto" class="form-control-custom" placeholder="Nombre descriptivo del proyecto" maxlength="45" required />
                             </div>
                             <div class="mb-1">
-                                <input type="text" id="p_Actividad" name="actividad_proyecto" class="form-control-custom" placeholder="Actividad principal o enfoque" required />
+                                <input type="text" id="p_Actividad" name="actividad_proyecto" class="form-control-custom" placeholder="Linea enfoque" maxlength="45" required />
                             </div>
                         </div>
                     </div>
@@ -106,7 +112,6 @@
                 </div>
                 <div class="d-flex gap-2 mb-4">
                     <button type="submit" name="accionCrud" value="agregar" class="btn text-white" style="background-color: #278a5f; width:auto; padding:10px 25px;"><i class="bi bi-plus-circle me-2"></i>Agregar Proyecto</button>
-                    <!-- Colores actualizados aquí -->
                     <button type="submit" name="accionCrud" value="actualizar" class="btn-logout" style="background-color:#c98d26; color:white; width:auto; padding:10px 25px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
                     <button type="submit" name="accionCrud" value="eliminar" class="btn-logout" style="background-color:#d42346; color:white; width:auto; padding:10px 25px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
 
@@ -115,42 +120,42 @@
                     </button>
                 </div>
             }
-        <div class="table-responsive-container">
-            <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;"><i class="bi bi-folder text-white me-2"></i>Proyectos de Investigación Activos</div>
-            <table class="custom-table table-hover table-text-black" id="tablaProyectosRaw">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre Proyecto</th>
-                        <th>Línea Enfoque</th>
-                        <th>Inicio</th>
-                        <th>Fin</th>
-                        <th class="text-center">Info</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (ViewBag.ListaProyectos != null)
-                    {
-                        foreach (var proj in ViewBag.ListaProyectos)
+            <div class="table-responsive-container">
+                <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;"><i class="bi bi-folder text-white me-2"></i>Proyectos de Investigación Activos</div>
+                <table class="custom-table table-hover table-text-black" id="tablaProyectosRaw">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre Proyecto</th>
+                            <th>Línea Enfoque</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th class="text-center">Info</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (ViewBag.ListaProyectos != null)
                         {
-                            <tr style="cursor: pointer;" title="Haga clic para editar en el formulario">
-                                <td class="fw-bold id-p-cell">@proj.ID_proyecto</td>
-                                <td style="font-weight:600;">@proj.nombre_proyecto</td>
-                                <td>@proj.actividad_proyecto</td>
-                                <td><span class="date-text-clean">@proj.fecha_inicio_proyecto.ToString("yyyy-MM-dd")</span></td>
-                                <td><span class="date-text-clean">@proj.fecha_fin_proyecto.ToString("yyyy-MM-dd")</span></td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;" onclick="verFichaTecnicaProyecto(event, this)" data-id="@proj.ID_proyecto" data-nombre="@proj.nombre_proyecto" data-actividad="@proj.actividad_proyecto" data-inicio='@proj.fecha_inicio_proyecto.ToString("dd/MM/yyyy")' data-fin='@proj.fecha_fin_proyecto.ToString("dd/MM/yyyy")'>
-                                        <i class="bi bi-exclamation-circle-fill fs-5"></i>
-                                    </button>
-                                </td>
-                                <td style="display:none;" class="sem-p-oculto">@proj.ID_semillero</td>
-                            </tr>
+                            foreach (var proj in ViewBag.ListaProyectos)
+                            {
+                                <tr style="cursor: pointer;" title="Haga clic para editar en el formulario">
+                                    <td class="fw-bold id-p-cell">@proj.ID_proyecto</td>
+                                    <td style="font-weight:600;">@proj.nombre_proyecto</td>
+                                    <td>@proj.actividad_proyecto</td>
+                                    <td><span class="date-text-clean">@proj.fecha_inicio_proyecto.ToString("yyyy-MM-dd")</span></td>
+                                    <td><span class="date-text-clean">@proj.fecha_fin_proyecto.ToString("yyyy-MM-dd")</span></td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;" onclick="verFichaTecnicaProyecto(event, this)" data-id="@proj.ID_proyecto" data-nombre="@proj.nombre_proyecto" data-actividad="@proj.actividad_proyecto" data-inicio='@proj.fecha_inicio_proyecto.ToString("dd/MM/yyyy")' data-fin='@proj.fecha_fin_proyecto.ToString("dd/MM/yyyy")'>
+                                            <i class="bi bi-exclamation-circle-fill fs-5"></i>
+                                        </button>
+                                    </td>
+                                    <td style="display:none;" class="sem-p-oculto">@proj.ID_semillero</td>
+                                </tr>
+                            }
                         }
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- ================= PESTAÑA B: FASES ================= -->
@@ -177,7 +182,7 @@
                             </select>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <input type="text" id="f_Nombre" name="nombre_fase_proyecto" class="form-control-custom" placeholder="Nombre de la fase" required />
+                            <input type="text" id="f_Nombre" name="nombre_fase_proyecto" class="form-control-custom" placeholder="Nombre de la fase" maxlength="45" required />
                         </div>
                     </div>
                     <div class="mb-1">
@@ -186,7 +191,6 @@
                 </div>
                 <div class="d-flex gap-2 mb-4">
                     <button type="submit" name="accionCrud" value="agregar" class="btn text-white" style="background-color: #278a5f; width:auto; padding:10px 25px;"><i class="bi bi-plus-circle me-2"></i>Agregar Fase</button>
-                    <!-- Colores actualizados aquí -->
                     <button type="submit" name="accionCrud" value="actualizar" class="btn-logout" style="background-color:#c98d26; color:white; width:auto; padding:10px 25px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
                     <button type="submit" name="accionCrud" value="eliminar" class="btn-logout" style="background-color:#d42346; color:white; width:auto; padding:10px 25px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
 
@@ -195,39 +199,39 @@
                     </button>
                 </div>
             }
-        <div class="table-responsive-container">
-            <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;"><i class="bi bi-layers-half text-white me-2"></i>Fases Registradas por Proyecto</div>
-            <table class="custom-table table-hover table-text-black" id="tablaFasesRaw">
-                <thead>
-                    <tr>
-                        <th>ID Fase</th>
-                        <th>Nombre Fase</th>
-                        <th>Descripción</th>
-                        <th>Proyecto Padre</th>
-                        <th class="text-center">Info</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (ViewBag.ListaFases != null)
-                    {
-                        foreach (dynamic fase in ViewBag.ListaFases)
+            <div class="table-responsive-container">
+                <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;"><i class="bi bi-layers-half text-white me-2"></i>Fases Registradas por Proyecto</div>
+                <table class="custom-table table-hover table-text-black" id="tablaFasesRaw">
+                    <thead>
+                        <tr>
+                            <th>ID Fase</th>
+                            <th>Nombre Fase</th>
+                            <th>Descripción</th>
+                            <th>Proyecto Padre</th>
+                            <th class="text-center">Info</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (ViewBag.ListaFases != null)
                         {
-                            <tr style="cursor: pointer;" title="Haga clic para editar">
-                                <td class="fw-bold id-f-cell">@fase.ID_fase_proyecto</td>
-                                <td style="font-weight:600;">@fase.nombre_fase_proyecto</td>
-                                <td class="text-truncate" style="max-width: 250px;">@fase.descripcion_fase_proyecto</td>
-                                <td>@fase.nombre_proyecto</td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;" onclick="verFichaTecnicaFase(event, this)" data-id="@fase.ID_fase_proyecto" data-nombre="@fase.nombre_fase_proyecto" data-descripcion="@fase.descripcion_fase_proyecto" data-proyecto="@fase.nombre_proyecto">
-                                        <i class="bi bi-exclamation-circle-fill fs-5"></i>
-                                    </button>
-                                </td>
-                            </tr>
+                            foreach (dynamic fase in ViewBag.ListaFases)
+                            {
+                                <tr style="cursor: pointer;" title="Haga clic para editar">
+                                    <td class="fw-bold id-f-cell">@fase.ID_fase_proyecto</td>
+                                    <td style="font-weight:600;">@fase.nombre_fase_proyecto</td>
+                                    <td class="text-truncate" style="max-width: 250px;">@fase.descripcion_fase_proyecto</td>
+                                    <td>@fase.nombre_proyecto</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;" onclick="verFichaTecnicaFase(event, this)" data-id="@fase.ID_fase_proyecto" data-nombre="@fase.nombre_fase_proyecto" data-descripcion="@fase.descripcion_fase_proyecto" data-proyecto="@fase.nombre_proyecto">
+                                            <i class="bi bi-exclamation-circle-fill fs-5"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
                         }
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- ================= PESTAÑA C: ACTIVIDADES ================= -->
@@ -255,7 +259,7 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <input type="text" id="a_Nombre" name="nombre_actividad_proyecto" class="form-control-custom" placeholder="Nombre específico de la actividad" required />
+                                <input type="text" id="a_Nombre" name="nombre_actividad_proyecto" class="form-control-custom" placeholder="Nombre específico de la actividad" maxlength="45" required />
                             </div>
                             <div class="mb-1">
                                 <textarea id="a_Descripcion" name="descripcion_actividad_proyecto" class="form-control-custom" rows="2" placeholder="Detalle técnico de la actividad..." required></textarea>
@@ -278,7 +282,6 @@
                 </div>
                 <div class="d-flex gap-2 mb-4">
                     <button type="submit" name="accionCrud" value="agregar" class="btn text-white" style="background-color: #278a5f; width:auto; padding:10px 25px;"><i class="bi bi-plus-circle me-2"></i>Agregar Actividad</button>
-                    <!-- Colores actualizados aquí -->
                     <button type="submit" name="accionCrud" value="actualizar" class="btn-logout" style="background-color:#c98d26; color:white; width:auto; padding:10px 25px;"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button>
                     <button type="submit" name="accionCrud" value="eliminar" class="btn-logout" style="background-color:#d42346; color:white; width:auto; padding:10px 25px;"><i class="bi bi-trash me-2"></i>Eliminar</button>
 
@@ -287,59 +290,59 @@
                     </button>
                 </div>
             }
-        <div class="table-responsive-container">
-            <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;">
-                <i class="bi bi-check2-square text-white me-2"></i>Cronograma de Actividades Generales
-            </div>
+            <div class="table-responsive-container">
+                <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); border-radius: .5rem .5rem 0 0;">
+                    <i class="bi bi-check2-square text-white me-2"></i>Cronograma de Actividades Generales
+                </div>
 
-            <table class="custom-table table-hover table-text-black" id="tablaActividadesRaw">
-                <thead>
-                    <tr>
-                        <th>ID Act.</th>
-                        <th>Nombre Actividad</th>
-                        <th>Detalle</th>
-                        <th>Inicio</th>
-                        <th>Fin</th>
-                        <th>Fase Vinculada</th>
-                        <th class="text-center">Info</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (ViewBag.ListaActividades != null)
-                    {
-                        foreach (dynamic act in ViewBag.ListaActividades)
+                <table class="custom-table table-hover table-text-black" id="tablaActividadesRaw">
+                    <thead>
+                        <tr>
+                            <th>ID Act.</th>
+                            <th>Nombre Actividad</th>
+                            <th>Detalle</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th>Fase Vinculada</th>
+                            <th class="text-center">Info</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (ViewBag.ListaActividades != null)
                         {
-                            string estadoAct = "En curso";
-                            if (act.fecha_fin_actividad_proyecto.Date < DateTime.Today) { estadoAct = "Finalizada"; }
-                            else if (act.fecha_inicio_actividad_proyecto.Date > DateTime.Today) { estadoAct = "Programada"; }
+                            foreach (dynamic act in ViewBag.ListaActividades)
+                            {
+                                string estadoAct = "En curso";
+                                if (act.fecha_fin_actividad_proyecto.Date < DateTime.Today) { estadoAct = "Finalizada"; }
+                                else if (act.fecha_inicio_actividad_proyecto.Date > DateTime.Today) { estadoAct = "Programada"; }
 
-                            <tr style="cursor: pointer;" title="Haga clic para editar">
-                                <td class="fw-bold id-a-cell">@act.ID_activida_proyecto</td>
-                                <td style="font-weight:600;">@act.nombre_actividad_proyecto</td>
-                                <td class="text-truncate" style="max-width: 200px;">@act.descripcion_actividad_proyecto</td>
-                                <td><span class="date-text-clean">@act.fecha_inicio_actividad_proyecto.ToString("dd/MM/yyyy")</span></td>
-                                <td><span class="date-text-clean">@act.fecha_fin_actividad_proyecto.ToString("dd/MM/yyyy")</span></td>
-                                <td>@act.nombre_fase_proyecto</td>
+                                <tr style="cursor: pointer;" title="Haga clic para editar">
+                                    <td class="fw-bold id-a-cell">@act.ID_activida_proyecto</td>
+                                    <td style="font-weight:600;">@act.nombre_actividad_proyecto</td>
+                                    <td class="text-truncate" style="max-width: 200px;">@act.descripcion_actividad_proyecto</td>
+                                    <td><span class="date-text-clean">@act.fecha_inicio_actividad_proyecto.ToString("dd/MM/yyyy")</span></td>
+                                    <td><span class="date-text-clean">@act.fecha_fin_actividad_proyecto.ToString("dd/MM/yyyy")</span></td>
+                                    <td>@act.nombre_fase_proyecto</td>
 
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
-                                            onclick="verFichaTecnicaActividad(event, this)"
-                                            data-id="@act.ID_activida_proyecto"
-                                            data-nombre="@act.nombre_actividad_proyecto"
-                                            data-descripcion="@act.descripcion_actividad_proyecto"
-                                            data-inicio='@act.fecha_inicio_actividad_proyecto.ToString("dd/MM/yyyy")'
-                                            data-fin='@act.fecha_fin_actividad_proyecto.ToString("dd/MM/yyyy")'
-                                            data-fase="@act.nombre_fase_proyecto"
-                                            data-estado="@estadoAct">
-                                        <i class="bi bi-exclamation-circle-fill fs-5" title="Ver hoja de detalles de la actividad"></i>
-                                    </button>
-                                </td>
-                            </tr>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-link p-0 text-decoration-none" style="color: #278a5f;"
+                                                onclick="verFichaTecnicaActividad(event, this)"
+                                                data-id="@act.ID_activida_proyecto"
+                                                data-nombre="@act.nombre_actividad_proyecto"
+                                                data-descripcion="@act.descripcion_actividad_proyecto"
+                                                data-inicio='@act.fecha_inicio_actividad_proyecto.ToString("dd/MM/yyyy")'
+                                                data-fin='@act.fecha_fin_actividad_proyecto.ToString("dd/MM/yyyy")'
+                                                data-fase="@act.nombre_fase_proyecto"
+                                                data-estado="@estadoAct">
+                                            <i class="bi bi-exclamation-circle-fill fs-5" title="Ver hoja de detalles de la actividad"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
                         }
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
     </div>
@@ -515,6 +518,21 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
+        // Validación de fechas
+        const hoy = new Date().toISOString().split('T')[0];
+        const camposDeFecha = document.querySelectorAll('input[type="date"]');
+
+        camposDeFecha.forEach(function(campo) {
+            campo.setAttribute("min", hoy);
+            campo.addEventListener('change', function() {
+                if (this.value < hoy && this.value !== "") {
+                    alert("No se pueden seleccionar fechas en el pasado. Por favor, elija una fecha válida.");
+                    this.value = '';
+                }
+            });
+        });
+
+        // Tabla Proyectos
         const tProyectos = document.getElementById("tablaProyectosRaw");
         if(tProyectos) {
             tProyectos.querySelectorAll("tbody tr").forEach(row => {
@@ -532,6 +550,7 @@
             });
         }
 
+        // Tabla Fases
         const tFases = document.getElementById("tablaFasesRaw");
         if(tFases) {
             tFases.querySelectorAll("tbody tr").forEach(row => {
@@ -554,6 +573,7 @@
             });
         }
 
+        // Tabla Actividades
         const tActividades = document.getElementById("tablaActividadesRaw");
         if(tActividades) {
             tActividades.querySelectorAll("tbody tr").forEach(row => {

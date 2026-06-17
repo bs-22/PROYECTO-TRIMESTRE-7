@@ -45,7 +45,6 @@
 
 <div class="container-fluid">
 
-    <!-- 🌟 NUEVO ENCABEZADO SUPERIOR 🌟 -->
     <div class="mb-4 mt-2">
         <h3 class="fw-bold text-dark">
             <i class="bi bi-calendar2-event me-2" style="color: #278a5f;"></i>Módulo de Consulta de Eventos
@@ -74,11 +73,10 @@
 
                     <div class="mb-4">
                         <label class="form-label small fw-bold text-muted">Ahora ingrese la información que quiere buscar relacionado con la opción escogida</label>
-                        <input type="text" name="valorBusqueda" id="valorBusqueda" class="form-control-custom" value="@valor" placeholder="Escriba aquí su búsqueda..." list="sugerenciasDinamicas" required autocomplete="off" />
+                        <input type="text" name="valorBusqueda" id="valorBusqueda" class="form-control-custom" value="@valor" placeholder="Escriba aquí su búsqueda..." list="sugerenciasDinamicas" required autocomplete="off" maxlength="45" />
                         <datalist id="sugerenciasDinamicas"></datalist>
                     </div>
 
-                    <!-- Botones de Acción Simétricos -->
                     <div class="mb-3 d-flex flex-column gap-2">
                         <button type="submit" class="btn-action-custom btn-search-custom">
                             <i class="bi bi-filter me-2"></i>Buscar con filtro
@@ -90,7 +88,6 @@
                     </div>
                 }
 
-                <!-- Mensaje de fecha (Oculto por defecto con d-none) -->
                 <div id="mensajeRecomendacionFecha" class="mt-4 p-3 bg-light rounded d-none" style="border: 1px dashed #cad1d7;">
                     <p class="small text-muted m-0 text-center fw-bold">
                         <i class="bi bi-info-circle text-warning me-2"></i>Recomendación: Si es por fecha, siga la estructura año-mes-día (AAAA-MM-DD)
@@ -101,8 +98,7 @@
 
         <div class="col-xl-8 col-lg-7 mb-4">
             <div class="table-responsive-container" style="margin-top: 0;">
-                <!-- Banner Verde Institucional -->
-                <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%);">
+                <div class="table-header-banner text-white" style="background: linear-gradient(87deg, #278a5f 0, #278a5f 100%); padding: 15px; font-weight: 600; font-size: 1.1rem; border-radius: .5rem .5rem 0 0;">
                     <i class="bi bi-calendar-event-fill me-2"></i>Cronograma institucional de Eventos y Ponencias
                 </div>
 
@@ -126,7 +122,6 @@
                                     <td style="color: #32325d; font-weight: 600;">@ev.nombre_evento</td>
                                     <td>@ev.descripción_evento</td>
 
-                                    <!-- 🌟 AQUÍ SE QUITÓ EL COLOR VERDE DE LA FECHA 🌟 -->
                                     <td class="text-dark fw-semibold">
                                         @(ev.fecha_evento != null ? ev.fecha_evento.ToString("dd/MM/yyyy") : "")
                                     </td>
@@ -152,7 +147,6 @@
     </div>
 </div>
 
-<!-- 🌟 SCRIPT QUE SE ENCARGA DEL AUTOCOMPLETADO INTELIGENTE (TOP 5) Y LÓGICA VISUAL -->
 @section scripts {
     <script>
         const datosGlobalesEventos = [
@@ -166,19 +160,27 @@
         document.addEventListener("DOMContentLoaded", function () {
             const selectFiltro = document.getElementById("criterioFiltro");
             const datalist = document.getElementById("sugerenciasDinamicas");
-            const msjFecha = document.getElementById("mensajeRecomendacionFecha"); // Referencia al div del mensaje
+            const msjFecha = document.getElementById("mensajeRecomendacionFecha");
+            const inputBusqueda = document.getElementById("valorBusqueda");
 
             function actualizarSugerencias() {
-                if(!selectFiltro || !datalist) return;
+                if(!selectFiltro || !datalist || !inputBusqueda) return;
 
                 const filtroActivo = selectFiltro.value.toLowerCase();
 
-                // LÓGICA VISUAL: Mostrar u ocultar el mensaje de recomendación de fecha
+                // LÓGICA VISUAL Y DE LÍMITES
                 if (filtroActivo === "fecha") {
-                    msjFecha.classList.remove("d-none"); // Lo muestra
+                    msjFecha.classList.remove("d-none"); // Muestra advertencia
+                    inputBusqueda.setAttribute("maxlength", "10"); // Limita a 10 caracteres (AAAA-MM-DD)
+                    inputBusqueda.setAttribute("placeholder", "Ej: 2026-06-16");
                 } else {
-                    msjFecha.classList.add("d-none"); // Lo oculta
+                    msjFecha.classList.add("d-none"); // Oculta advertencia
+                    inputBusqueda.setAttribute("maxlength", "45"); // Regresa al límite de 45 caracteres
+                    inputBusqueda.setAttribute("placeholder", "Escriba aquí su búsqueda...");
                 }
+
+                // Opcional: limpiar el input al cambiar de filtro para evitar formatos cruzados
+                inputBusqueda.value = '';
 
                 datalist.innerHTML = ""; // Limpiamos las opciones viejas
                 let opcionesBrutas = [];
@@ -204,6 +206,19 @@
             if(selectFiltro) {
                 selectFiltro.addEventListener("change", actualizarSugerencias);
                 actualizarSugerencias(); // Disparamos la función al iniciar
+            }
+
+            // 🌟 VALIDACIÓN DE TECLADO: Bloquear letras si está en modo "fecha"
+            if(inputBusqueda && selectFiltro) {
+                inputBusqueda.addEventListener("keypress", function (e) {
+                    const filtroActivo = selectFiltro.value.toLowerCase();
+                    const charCode = e.which ? e.which : e.keyCode;
+
+                    // Si es Fecha, permitir solo números (0-9) y guiones (-)
+                    if (filtroActivo === "fecha" && (charCode < 45 || charCode > 57 || charCode === 46 || charCode === 47)) {
+                        e.preventDefault();
+                    }
+                });
             }
         });
     </script>
