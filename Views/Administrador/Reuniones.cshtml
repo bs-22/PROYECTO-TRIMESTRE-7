@@ -65,7 +65,7 @@
 
     /* Estilos del Encabezado de Sección */
     .header-icon-box {
-        background-color: #d1e7dd; /* Verde sutil institucional */
+        background-color: #d1e7dd;
         color: #198754;
         width: 60px;
         height: 60px;
@@ -98,24 +98,10 @@
                     <h5 class="fw-bold text-dark m-0" style="font-size: 1.1rem;">Filtros de Agenda</h5>
                 </div>
 
-                <p class="text-muted small mb-4">Filtre los compromisos según el semillero investigador o el estado actual de la reunión.</p>
+                <p class="text-muted small mb-4">Filtre los compromisos según el estado actual de la reunión.</p>
 
                 @using (Html.BeginForm("Reuniones", "Administrador", FormMethod.Get))
                 {
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-secondary">Semillero Organizador</label>
-                        <select name="filtroSemillero" class="form-select form-select-sm">
-                            <option value="">-- Todos los semilleros --</option>
-                            @if (comboSemilleros != null)
-                            {
-                                foreach (var s in comboSemilleros)
-                                {
-                                    <option value="@s.ID_semillero" @(ViewBag.SemilleroSel?.ToString() == s.ID_semillero.ToString() ? "selected" : "")>@s.nombre_semillero</option>
-                                }
-                            }
-                        </select>
-                    </div>
-
                     <div class="mb-4">
                         <label class="form-label small fw-bold text-secondary">Estado de Reunión</label>
                         <select name="filtroEstado" class="form-select form-select-sm">
@@ -161,32 +147,28 @@
                             {
                                 foreach (var r in Model)
                                 {
-                                    // 🌟 LÓGICA DINÁMICA DE ESTADOS BASADA EN LA FECHA
                                     DateTime hoy = DateTime.Today;
                                     DateTime fechaReunion = r.fecha_reunion.Date;
                                     TimeSpan diferencia = fechaReunion - hoy;
 
                                     string textoEstado = "";
                                     string badgeClass = "";
-                                    string textClass = ""; // Para atenuar el texto si ya pasó
+                                    string textClass = "";
 
                                     if (diferencia.Days < 0)
                                     {
-                                        // 1. Si la fecha es menor a hoy (ya pasó)
                                         textoEstado = "Finalizada";
                                         badgeClass = "bg-secondary-subtle text-secondary border border-secondary-subtle";
-                                        textClass = "text-muted"; // Atenúa el color de la fila
+                                        textClass = "text-muted";
                                     }
                                     else if (diferencia.Days >= 0 && diferencia.Days <= 3)
                                     {
-                                        // 2. Si es hoy o en los próximos 3 días (Cerca)
                                         textoEstado = "En curso";
                                         badgeClass = "bg-warning-subtle text-warning border border-warning-subtle";
                                         textClass = "text-dark";
                                     }
                                     else
                                     {
-                                        // 3. Si faltan más de 3 días (Lejos)
                                         textoEstado = "Programada";
                                         badgeClass = "bg-info-subtle text-info border border-info-subtle";
                                         textClass = "text-dark";
@@ -306,16 +288,15 @@
         </div>
     </div>
 </div>
+
 @section Scripts {
     <script>
         $(document).ready(function () {
 
-            // Evento Click en la fila del Cronograma (Mapeo por Data Attributes Seguro)
             $(".fila-reunion").click(function () {
                 $(".fila-reunion").removeClass("table-success-subtle table-active");
                 $(this).addClass("table-success-subtle table-active");
 
-                // Extracción limpia desde los data tags del TR
                 var idReunion = $(this).data("idreunion");
                 var fechaStr = $(this).data("fecha");
                 var lugar = $(this).data("lugar");
@@ -324,7 +305,6 @@
                 var idSemillero = $(this).data("idsemillero");
                 var desc = $(this).data("desc");
 
-                // Carga de campos del panel inferior
                 $("#hdnIDReunion").val(idReunion);
                 $("#txtIDVisual").val(idReunion);
                 $("#txtFecha").val(fechaStr);
@@ -334,50 +314,61 @@
                 $("#ddlSemillero").val(idSemillero);
                 $("#txtDescripcion").val(desc);
 
-                // Limpieza intermedia de checks de asistencia
                 $(".chk-usuario").prop("checked", false);
 
-                // Llamado asíncrono para mapear los checkboxes reales guardados en asistencia_reunion
                 $.ajax({
                     url: '@Url.Action("ObtenerParticipantes", "Administrador")',
                     type: 'GET',
                     data: { idReunion: idReunion },
                     success: function (ids) {
                         if(ids) ids.forEach(i => $("#chk_" + i).prop("checked", true));
-
-                        // 👇 ¡AQUÍ ESTÁ EL CAMBIO 1! Llama a la validación al cargar los datos de la fila
                         verificarDisponibilidadParticipantes();
                     }
                 });
 
-                // MUTACIÓN DEL CONTROL VISUAL (Modo Edición Activo)
                 $("#txtTituloFormulario").html('<i class="bi bi-pencil-square text-warning me-2"></i>Modificar Logística de la Reunión Seleccionada');
                 $("#btnResetForm").removeClass("d-none");
                 $("#btnAgregar").addClass("d-none");
                 $("#btnActualizar").removeClass("d-none");
 
-                // Scroll automático suave hacia el formulario
                 $('html, body').animate({ scrollTop: $("#txtTituloFormulario").offset().top - 100 }, 150);
             });
 
-            // 👇 ¡AQUÍ ESTÁ EL CAMBIO 2! El escuchador para cuando el usuario cambia la fecha o la hora manualmente
             $("#txtFecha, #txtHora, #txtHoraFin").on("change blur", function() {
                 verificarDisponibilidadParticipantes();
             });
 
-            // Validaciones del lado del cliente antes de enviar el formulario por POST
+            // LÓGICA DE VALIDACIÓN PRINCIPAL
             $("#formGestion").submit(function(e) {
                 var fechaInput = $("#txtFecha").val();
                 if(fechaInput) {
                     var fechaVal = new Date(fechaInput + "T00:00:00");
-                    if (fechaVal.getDay() === 0) { // 0 corresponde a Domingo
+                    if (fechaVal.getDay() === 0) {
                         alert("Inconsistencia Operacional: No se permiten agendar comités institucionales los días domingo.");
                         e.preventDefault();
+                        return;
                     }
+                }
+
+                var horaInicioStr = $("#txtHora").val();
+                var horaFinStr = $("#txtHoraFin").val();
+
+                var minInicio = parseTime12Hour(horaInicioStr);
+                var minFin = parseTime12Hour(horaFinStr);
+
+                if (minInicio !== null && minFin !== null) {
+                    if (minFin <= minInicio) {
+                        alert("Inconsistencia Operacional: La hora de fin de la reunión no puede ser anterior o igual a la hora de inicio.");
+                        e.preventDefault();
+                        return;
+                    }
+                } else {
+                    alert("Formato de hora inválido. Asegúrese de usar el formato HH:MM AM/PM (Ej: 08:00 AM).");
+                    e.preventDefault();
+                    return;
                 }
             });
 
-            // OPERACIÓN AJAX: ELIMINACIÓN DE LA REUNIÓN
             $("#btnEliminar").click(function () {
                 var id = $("#hdnIDReunion").val();
                 if (!id || id === "0") { alert("Por favor seleccione una reunión vigente del cronograma."); return; }
@@ -394,9 +385,23 @@
                     });
                 }
             });
-        }); // Fin del $(document).ready
+        });
 
-        // Función para validar disponibilidad en base de datos
+        // Función auxiliar para convertir cadena AM/PM a minutos numéricos (Ej: "02:30 PM" -> 870)
+        function parseTime12Hour(timeString) {
+            var match = timeString.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (!match) return null;
+
+            var hours = parseInt(match[1], 10);
+            var minutes = parseInt(match[2], 10);
+            var ampm = match[3].toUpperCase();
+
+            if (ampm === "PM" && hours < 12) hours += 12;
+            if (ampm === "AM" && hours === 12) hours = 0;
+
+            return (hours * 60) + minutes;
+        }
+
         function verificarDisponibilidadParticipantes() {
             var fecha = $("#txtFecha").val();
             var horaInicio = $("#txtHora").val();
@@ -437,13 +442,11 @@
             }
         }
 
-        // Función para restaurar la UI al modo de creación limpia
         function resetearFormularioReunion() {
             $("#hdnIDReunion").val("0");
             $("#txtIDVisual").val("");
             $("#formGestion")[0].reset();
 
-            // 👇 ¡AQUÍ ESTÁ EL CAMBIO 3! (Opcional, pero recomendado) Restaurar también los estilos de ocupado al limpiar el form
             $(".chk-usuario").prop("checked", false);
             $(".chk-usuario").prop("disabled", false);
             $(".chk-usuario").parent().css("opacity", "1");
